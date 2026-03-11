@@ -109,26 +109,20 @@ jobs:
 
           if [ "$IS_PRERELEASE" == "true" ]; then
             PRERELEASE_FLAG="--prerelease"
-            NOTES=$(cat << EOF
-Pre-release build from main branch (synced with rulesync v$(cat .rulesync-version 2>/dev/null || echo 'unknown'))
+            NOTES="Pre-release build from main branch (synced with rulesync v$(cat .rulesync-version 2>/dev/null || echo 'unknown'))
 
 ## Packages
 
 - **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
-- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet
-EOF
-)
+- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet"
           else
             PRERELEASE_FLAG=""
-            NOTES=$(cat << EOF
-Release $VERSION
+            NOTES="Release $VERSION
 
 ## Packages
 
 - **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
-- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet
-EOF
-)
+- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet"
           fi
 
           gh release create "$VERSION" \
