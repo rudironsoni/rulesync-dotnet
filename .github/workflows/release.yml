@@ -93,19 +93,35 @@ jobs:
           path: ./nupkg/*.nupkg
           retention-days: 30
 
+      - name: Publish to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
+          VERSION_NUMBER="${VERSION#v}"
 
           if [ "$IS_PRERELEASE" == "true" ]; then
             PRERELEASE_FLAG="--prerelease"
-            NOTES="Pre-release build from main branch (synced with rulesync v$(cat .rulesync-version 2>/dev/null || echo 'unknown'))"
+            NOTES="Pre-release build from main branch (synced with rulesync v$(cat .rulesync-version 2>/dev/null || echo 'unknown'))
+
+## Packages
+
+- **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
+- **GitHub Packages**: https://github.com/${{ github.repository_owner }}/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet"
           else
             PRERELEASE_FLAG=""
-            NOTES="Release $VERSION"
+            NOTES="Release $VERSION
+
+## Packages
+
+- **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
+- **GitHub Packages**: https://github.com/${{ github.repository_owner }}/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet"
           fi
 
           gh release create "$VERSION" \
@@ -113,12 +129,6 @@ jobs:
             --title "$VERSION" \
             --notes "$NOTES" \
             $PRERELEASE_FLAG
-
-      - name: Publish to NuGet.org
-        if: steps.version.outputs.is_prerelease == 'false'
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Publish to GitHub Packages
         env:
