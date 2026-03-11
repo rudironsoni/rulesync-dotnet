@@ -117,10 +117,12 @@ jobs:
           IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
           RULESYNC_VERSION=$(cat .rulesync-version 2>/dev/null || echo 'unknown')
 
-          cat > release-notes.md << EOF
+          cat > release-notes.md << 'EOF'
 ## RuleSync Release Notes
 
-$(cat rulesync-notes.md)
+EOF
+          cat rulesync-notes.md >> release-notes.md
+          cat >> release-notes.md << EOF
 
 ## .NET SDK Packages
 
