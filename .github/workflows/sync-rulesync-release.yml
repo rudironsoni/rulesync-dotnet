@@ -48,7 +48,8 @@ jobs:
         run: |
           VERSION="${{ steps.check-sync.outputs.version }}"
           cd rulesync
-          git fetch origin
+          git fetch --unshallow origin || git fetch origin
+          git fetch origin tag "$VERSION"
           git checkout "$VERSION"
           cd ..
 
