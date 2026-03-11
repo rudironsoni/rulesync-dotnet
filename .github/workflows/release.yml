@@ -101,6 +101,7 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
@@ -108,20 +109,26 @@ jobs:
 
           if [ "$IS_PRERELEASE" == "true" ]; then
             PRERELEASE_FLAG="--prerelease"
-            NOTES="Pre-release build from main branch (synced with rulesync v$(cat .rulesync-version 2>/dev/null || echo 'unknown'))
+            NOTES=$(cat << EOF
+Pre-release build from main branch (synced with rulesync v$(cat .rulesync-version 2>/dev/null || echo 'unknown'))
 
 ## Packages
 
 - **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
-- **GitHub Packages**: https://github.com/${{ github.repository_owner }}/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet"
+- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet
+EOF
+)
           else
             PRERELEASE_FLAG=""
-            NOTES="Release $VERSION
+            NOTES=$(cat << EOF
+Release $VERSION
 
 ## Packages
 
 - **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
-- **GitHub Packages**: https://github.com/${{ github.repository_owner }}/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet"
+- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet
+EOF
+)
           fi
 
           gh release create "$VERSION" \
