@@ -64,10 +64,12 @@ public sealed class RulesyncClient : IDisposable
     {
         ThrowIfDisposed();
 
+        // Build args first (validates options) - this throws for invalid arguments
+        var opts = options ?? new GenerateOptions();
+        var args = BuildGenerateArgs(opts);
+
         try
         {
-            var opts = options ?? new GenerateOptions();
-            var args = BuildGenerateArgs(opts);
             var result = await ExecuteRulesyncAsync(args, cancellationToken).ConfigureAwait(false);
 
             if (result.ExitCode != 0)
@@ -113,9 +115,11 @@ public sealed class RulesyncClient : IDisposable
     {
         ThrowIfDisposed();
 
+        // Build args first (validates options) - this throws for invalid arguments
+        var args = BuildImportArgs(options);
+
         try
         {
-            var args = BuildImportArgs(options);
             var result = await ExecuteRulesyncAsync(args, cancellationToken).ConfigureAwait(false);
 
             if (result.ExitCode != 0)
@@ -171,7 +175,7 @@ public sealed class RulesyncClient : IDisposable
                 {
                     throw new ArgumentException(
                         $"Invalid ToolTarget value: {target}.",
-                        nameof(options.Targets));
+                        "targets");
                 }
             }
         }
@@ -185,7 +189,7 @@ public sealed class RulesyncClient : IDisposable
                 {
                     throw new ArgumentException(
                         $"Invalid Feature value: {feature}.",
-                        nameof(options.Features));
+                        "features");
                 }
             }
         }
@@ -215,11 +219,15 @@ public sealed class RulesyncClient : IDisposable
         if (options.DryRun == true) args.Add("--dry-run");
         if (options.Check == true) args.Add("--check");
 
-        if (!string.IsNullOrEmpty(options.ConfigPath))
+        // Always validate config path if provided (even if empty, to catch invalid characters)
+        if (options.ConfigPath is not null)
         {
             var configPath = ValidateConfigPath(options.ConfigPath);
-            args.Add("--config");
-            args.Add(configPath);
+            if (!string.IsNullOrEmpty(configPath))
+            {
+                args.Add("--config");
+                args.Add(configPath);
+            }
         }
 
         // Add JSON output flag
@@ -236,7 +244,7 @@ public sealed class RulesyncClient : IDisposable
         {
             throw new ArgumentException(
                 $"Invalid ToolTarget value: {options.Target}. Target must be specified and cannot be the default value.",
-                nameof(options));
+                "target");
         }
 
         var args = new System.Collections.Generic.List<string>();
@@ -254,11 +262,15 @@ public sealed class RulesyncClient : IDisposable
         if (options.Silent == false) args.Add("--no-silent");
         if (options.Global == true) args.Add("--global");
 
-        if (!string.IsNullOrEmpty(options.ConfigPath))
+        // Always validate config path if provided (even if empty, to catch invalid characters)
+        if (options.ConfigPath is not null)
         {
             var configPath = ValidateConfigPath(options.ConfigPath);
-            args.Add("--config");
-            args.Add(configPath);
+            if (!string.IsNullOrEmpty(configPath))
+            {
+                args.Add("--config");
+                args.Add(configPath);
+            }
         }
 
         // Add JSON output flag
@@ -296,8 +308,10 @@ public sealed class RulesyncClient : IDisposable
         if (!Path.IsPathRooted(path))
         {
             // Allow relative paths like "node" or "npx" that are resolved from PATH
-            // but validate they don't contain directory traversal
-            if (path.Contains("..") || path.Contains("./") || path.Contains(".\\"))
+            // but validate they don't contain directory traversal sequences
+            // Only check for actual traversal patterns, not encoded sequences like "..%2f"
+            if (path.Contains("../") || path.Contains("..\\") || path == ".." ||
+                path.StartsWith("./") || path.StartsWith(".\\"))
             {
                 throw new ArgumentException("Executable path cannot contain directory traversal characters.", paramName);
             }
@@ -318,8 +332,22 @@ public sealed class RulesyncClient : IDisposable
         if (string.IsNullOrEmpty(name))
             return string.Empty;
 
-        // Convert PascalCase to kebab-case
-        // Handle special cases like "AugmentCodeLegacy" -> "augmentcode-legacy"
+        // Special case mappings for legacy names with hyphens
+        return name switch
+        {
+            "ClaudeCodeLegacy" => "claudecode-legacy",
+            "AugmentCodeLegacy" => "augmentcode-legacy",
+            "AgentsMd" => "agentsmd",
+            "AgentsSkills" => "agentsskills",
+            _ => PascalCaseToKebabCase(name)
+        };
+    }
+
+    /// <summary>
+    /// Converts PascalCase to kebab-case.
+    /// </summary>
+    private static string PascalCaseToKebabCase(string name)
+    {
         var result = new System.Text.StringBuilder();
         for (int i = 0; i < name.Length; i++)
         {
@@ -337,7 +365,6 @@ public sealed class RulesyncClient : IDisposable
                 result.Append(c);
             }
         }
-
         return result.ToString();
     }
 

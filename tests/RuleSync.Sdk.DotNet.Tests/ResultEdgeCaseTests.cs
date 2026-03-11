@@ -94,11 +94,14 @@ public class ResultEdgeCaseTests
     {
         var callCount = 0;
         var result = Result<string>.Success("5");
-        var mapped = result
-            .Map(x => { callCount++; return x + "0"; })
-            .Map<string>(_ => throw new InvalidOperationException("Stop here"));
 
-        // Second map throws, so chain is broken
+        // Second map throws, so chain is broken and exception propagates
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            result
+                .Map(x => { callCount++; return x + "0"; })
+                .Map<string>(_ => throw new InvalidOperationException("Stop here")));
+
+        Assert.Equal("Stop here", ex.Message);
         Assert.Equal(1, callCount);
     }
 

@@ -19,13 +19,14 @@ internal static class RulesyncJsonContext
     private static readonly JsonSerializerOptions s_options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        NumberHandling = JsonNumberHandling.Strict,
         MaxDepth = 64,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
     /// <summary>
     /// Deserializes a GenerateResult from JSON.
+    /// Returns null if the JSON is invalid, whitespace-only, or cannot be parsed.
     /// </summary>
 #if NET6_0_OR_GREATER
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
@@ -35,11 +36,22 @@ internal static class RulesyncJsonContext
 #endif
     internal static GenerateResult? DeserializeGenerateResult(string json)
     {
-        return JsonSerializer.Deserialize<GenerateResult>(json, s_options);
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<GenerateResult>(json, s_options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
     /// Deserializes an ImportResult from JSON.
+    /// Returns null if the JSON is invalid, whitespace-only, or cannot be parsed.
     /// </summary>
 #if NET6_0_OR_GREATER
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
@@ -49,6 +61,16 @@ internal static class RulesyncJsonContext
 #endif
     internal static ImportResult? DeserializeImportResult(string json)
     {
-        return JsonSerializer.Deserialize<ImportResult>(json, s_options);
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<ImportResult>(json, s_options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }

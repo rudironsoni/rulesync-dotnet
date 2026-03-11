@@ -117,7 +117,7 @@ public class ClientSecurityTests
         var options = new GenerateOptions { ConfigPath = "/path/to/config\0--evil" };
 
         var ex = Assert.Throws<ArgumentException>(() =>
-            client.GenerateAsync(options));
+            client.GenerateAsync(options).AsTask().GetAwaiter().GetResult());
 
         Assert.Contains("invalid characters", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -133,7 +133,7 @@ public class ClientSecurityTests
         };
 
         var ex = Assert.Throws<ArgumentException>(() =>
-            client.ImportAsync(options));
+            client.ImportAsync(options).AsTask().GetAwaiter().GetResult());
 
         Assert.Contains("invalid characters", ex.Message, StringComparison.OrdinalIgnoreCase);
     }

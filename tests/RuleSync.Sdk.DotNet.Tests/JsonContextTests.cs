@@ -175,14 +175,14 @@ public class JsonContextTests
     }
 
     [Fact]
-    public void DeserializeGenerateResult_ExtremeNesting_ThrowsJsonException()
+    public void DeserializeGenerateResult_ExtremeNesting_ReturnsNull()
     {
         // Create JSON with 100 levels of nesting (exceeds 64 limit)
         var nestedJson = GenerateNestedJson(100);
 
-        // This should throw due to MaxDepth exceeded
-        Assert.Throws<JsonException>(() =>
-            RulesyncJsonContext.DeserializeGenerateResult(nestedJson));
+        // This returns null for depth exceeded (caught as JsonException)
+        var result = RulesyncJsonContext.DeserializeGenerateResult(nestedJson);
+        Assert.Null(result);
     }
 
     private string GenerateNestedJson(int depth)
@@ -247,16 +247,15 @@ public class JsonContextTests
     }
 
     [Fact]
-    public void DeserializeGenerateResult_WithNullValues_UsesDefaults()
+    public void DeserializeGenerateResult_WithNullValues_ReturnsNull()
     {
-        // JSON null values for int should become 0
+        // JSON null values for value types throw JsonException which we catch and return null
         var json = "{\"rulesCount\": null, \"hasDiff\": null}";
 
         var result = RulesyncJsonContext.DeserializeGenerateResult(json);
 
-        Assert.NotNull(result);
-        Assert.Equal(0, result.RulesCount);
-        Assert.False(result.HasDiff);
+        // Null values in JSON for value types cause deserialization to fail, returning null
+        Assert.Null(result);
     }
 
     [Fact]

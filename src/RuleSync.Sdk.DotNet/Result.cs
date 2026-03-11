@@ -66,8 +66,11 @@ public readonly struct Result<T>
     /// <summary>
     /// Maps the result value to a new type if successful.
     /// </summary>
-    public Result<TResult> Map<TResult>(Func<T, TResult> mapper) where TResult : class
+    public Result<TResult> Map<TResult>(Func<T, TResult> mapper)
     {
+        if (IsSuccess && mapper is null)
+            throw new ArgumentNullException(nameof(mapper));
+
         return IsSuccess
             ? Result<TResult>.Success(mapper(_value!))
             : Result<TResult>.Failure(_error!);
