@@ -2,9 +2,9 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using RuleSync.Sdk.Models;
+using Rulesync.Sdk.DotNet.Models;
 
-namespace RuleSync.Sdk.Serialization;
+namespace Rulesync.Sdk.DotNet.Serialization;
 
 /// <summary>
 /// JSON serialization helpers for Rulesync models.

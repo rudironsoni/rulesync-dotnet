@@ -3,10 +3,10 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using RuleSync.Sdk.Models;
+using Rulesync.Sdk.DotNet.Models;
 using Xunit;
 
-namespace RuleSync.Sdk.Tests;
+namespace Rulesync.Sdk.DotNet.Tests;
 
 public class ModelTests
 {

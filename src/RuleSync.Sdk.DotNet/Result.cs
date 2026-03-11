@@ -2,7 +2,7 @@
 
 using System;
 
-namespace RuleSync.Sdk;
+namespace Rulesync.Sdk.DotNet;
 
 /// <summary>
 /// Represents the result of a rulesync operation that can succeed or fail.

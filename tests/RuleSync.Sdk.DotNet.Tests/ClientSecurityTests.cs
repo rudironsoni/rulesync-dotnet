@@ -1,10 +1,10 @@
 #nullable enable
 
 using System;
-using RuleSync.Sdk.Models;
+using Rulesync.Sdk.DotNet.Models;
 using Xunit;
 
-namespace RuleSync.Sdk.Tests;
+namespace Rulesync.Sdk.DotNet.Tests;
 
 public class ClientSecurityTests
 {

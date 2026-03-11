@@ -354,3 +354,6 @@ coverage.cobertura.xml
 *.swp
 *~
 .DS_Store
+
+# Native binaries - built at CI time
+native-binaries/

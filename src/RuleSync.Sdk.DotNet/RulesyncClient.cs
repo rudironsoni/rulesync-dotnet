@@ -8,13 +8,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RuleSync.Sdk.Models;
-using RuleSync.Sdk.Serialization;
+using Rulesync.Sdk.DotNet.Models;
+using Rulesync.Sdk.DotNet.Serialization;
 #if NETSTANDARD2_1
-using RuleSync.Sdk.Polyfills;
+using Rulesync.Sdk.DotNet.Polyfills;
 #endif
 
-namespace RuleSync.Sdk;
+namespace Rulesync.Sdk.DotNet;
 
 /// <summary>
 /// Client for interacting with rulesync from .NET applications.
@@ -24,6 +24,7 @@ public sealed class RulesyncClient : IDisposable
 {
     private readonly string _nodeExecutablePath;
     private readonly string? _rulesyncPath;
+    private readonly string? _nativeExecutablePath;
     private readonly TimeSpan _timeout;
     private bool _disposed;
 
@@ -34,16 +35,36 @@ public sealed class RulesyncClient : IDisposable
     /// Optional path to Node.js executable. If null, uses "node" from PATH.
     /// Security note: Ensure this path is trusted. Providing an untrusted path could result in arbitrary code execution.
     /// </param>
-    /// <param name="rulesyncPath">Optional path to rulesync package. If null, uses npx rulesync.</param>
+    /// <param name="rulesyncPath">Optional path to rulesync package. If null, uses bundled or npx.</param>
     /// <param name="timeout">Optional timeout for operations. Default is 60 seconds.</param>
     public RulesyncClient(
         string? nodeExecutablePath = null,
         string? rulesyncPath = null,
         TimeSpan? timeout = null)
     {
-        _nodeExecutablePath = ValidateExecutablePath(nodeExecutablePath ?? "node", nameof(nodeExecutablePath));
-        _rulesyncPath = rulesyncPath != null ? ValidateExecutablePath(rulesyncPath, nameof(rulesyncPath)) : null;
         _timeout = timeout ?? TimeSpan.FromSeconds(60);
+
+        // Priority: explicit rulesyncPath > native executable > bundled JS > npx
+        if (rulesyncPath != null)
+        {
+            _rulesyncPath = ValidateExecutablePath(rulesyncPath, nameof(rulesyncPath));
+            _nodeExecutablePath = ValidateExecutablePath(nodeExecutablePath ?? FindNodeExecutable(), nameof(nodeExecutablePath));
+            _nativeExecutablePath = null;
+        }
+        else if (GetNativeExecutablePath() is { } nativePath)
+        {
+            // Use native executable (Bun-compiled) - no Node.js needed!
+            _nativeExecutablePath = nativePath;
+            _nodeExecutablePath = string.Empty;
+            _rulesyncPath = null;
+        }
+        else
+        {
+            // Fall back to JS bundle with Node.js
+            _nativeExecutablePath = null;
+            _rulesyncPath = GetBundledRulesyncPath();
+            _nodeExecutablePath = ValidateExecutablePath(nodeExecutablePath ?? FindNodeExecutable(), nameof(nodeExecutablePath));
+        }
     }
 
     /// <summary>
@@ -323,6 +344,164 @@ public sealed class RulesyncClient : IDisposable
     }
 
     /// <summary>
+    /// Discovers the bundled rulesync CLI path relative to the SDK assembly location.
+    /// </summary>
+    /// <returns>Path to bundled rulesync directory if found, null otherwise.</returns>
+    private static string? GetBundledRulesyncPath()
+    {
+        try
+        {
+            var assemblyLocation = typeof(RulesyncClient).Assembly.Location;
+            if (string.IsNullOrEmpty(assemblyLocation))
+                return null;
+
+            var assemblyDir = Path.GetDirectoryName(assemblyLocation);
+            if (string.IsNullOrEmpty(assemblyDir))
+                return null;
+
+            // Navigate from assembly location (bin/Release/net8.0/) to package tools folder
+            var bundledPath = Path.Combine(assemblyDir, "..", "..", "..", "tools", "rulesync");
+            var fullPath = Path.GetFullPath(bundledPath);
+
+            // Verify the expected CLI entry point exists
+            var cliPath = Path.Combine(fullPath, "dist", "cli", "index.js");
+            return File.Exists(cliPath) ? fullPath : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Discovers the native executable path for the current platform.
+    /// Native executables are built using Bun and bundled with the SDK.
+    /// </summary>
+    /// <returns>Path to native executable if found, null otherwise.</returns>
+    private static string? GetNativeExecutablePath()
+    {
+        try
+        {
+            var assemblyLocation = typeof(RulesyncClient).Assembly.Location;
+            if (string.IsNullOrEmpty(assemblyLocation))
+                return null;
+
+            var assemblyDir = Path.GetDirectoryName(assemblyLocation);
+            if (string.IsNullOrEmpty(assemblyDir))
+                return null;
+
+            // Determine runtime identifier for current platform
+            var runtimeId = GetRuntimeId();
+            var exeName = GetNativeExecutableName();
+
+            // Look for native executable in tools/rulesync-native/{runtime-id}/
+            var nativePath = Path.Combine(assemblyDir, "..", "..", "..", "tools", "rulesync-native", runtimeId, exeName);
+            var fullPath = Path.GetFullPath(nativePath);
+
+            return File.Exists(fullPath) ? fullPath : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the runtime identifier for the current platform (e.g., "linux-x64", "osx-arm64").
+    /// </summary>
+    private static string GetRuntimeId()
+    {
+#if NETSTANDARD2_1
+        var isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+        var isMacOS = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+        var arch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
+#else
+        var isWindows = OperatingSystem.IsWindows();
+        var isMacOS = OperatingSystem.IsMacOS();
+        var arch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
+#endif
+        string platform;
+        if (isWindows)
+            platform = "win";
+        else if (isMacOS)
+            platform = "osx";
+        else
+            platform = "linux";
+
+        string architecture = arch.ToString().ToLowerInvariant();
+        return $"{platform}-{architecture}";
+    }
+
+    /// <summary>
+    /// Gets the native executable name for the current platform.
+    /// </summary>
+    private static string GetNativeExecutableName()
+    {
+#if NETSTANDARD2_1
+        var isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+#else
+        var isWindows = OperatingSystem.IsWindows();
+#endif
+        return isWindows ? "rulesync.exe" : "rulesync";
+    }
+
+    /// <summary>
+    /// Finds the Node.js executable across common platform paths.
+    /// </summary>
+    /// <returns>Path to node executable if found, "node" as fallback.</returns>
+    private static string FindNodeExecutable()
+    {
+#if NETSTANDARD2_1
+        var isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+#else
+        var isWindows = OperatingSystem.IsWindows();
+#endif
+        if (isWindows)
+        {
+            // On Windows, check common installation locations
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+            var windowsPaths = new[]
+            {
+                Path.Combine(localAppData, "nvm", "current", "node.exe"),
+                Path.Combine(programFiles, "nodejs", "node.exe"),
+                Path.Combine(programFilesX86, "nodejs", "node.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "nvm", "current", "node.exe"),
+            };
+
+            foreach (var path in windowsPaths)
+            {
+                if (File.Exists(path))
+                    return path;
+            }
+        }
+        else
+        {
+            // Unix-like systems: check common paths
+            var unixPaths = new[]
+            {
+                "/usr/bin/node",
+                "/usr/local/bin/node",
+                "/opt/homebrew/bin/node",
+                "/opt/local/bin/node",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nvm", "current", "bin", "node"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share", "nvm", "current", "bin", "node"),
+            };
+
+            foreach (var path in unixPaths)
+            {
+                if (File.Exists(path))
+                    return path;
+            }
+        }
+
+        // Fall back to PATH resolution
+        return "node";
+    }
+
+    /// <summary>
     /// Converts an enum value to its CLI-compatible kebab-case string representation.
     /// </summary>
     private static string ToCliValue<T>(T value) where T : struct, Enum
@@ -376,21 +555,26 @@ public sealed class RulesyncClient : IDisposable
     {
         var startInfo = new ProcessStartInfo
         {
-            FileName = _nodeExecutablePath,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true
         };
 
-        if (_rulesyncPath != null)
+        if (_nativeExecutablePath != null)
         {
-            // Direct path to rulesync module
-            startInfo.ArgumentList.Add(Path.Combine(_rulesyncPath, "dist", "cli.js"));
+            // Use native executable (Bun-compiled) - no Node.js needed!
+            startInfo.FileName = _nativeExecutablePath;
+        }
+        else if (_rulesyncPath != null)
+        {
+            // Use bundled JS with Node.js
+            startInfo.FileName = _nodeExecutablePath;
+            startInfo.ArgumentList.Add(Path.Combine(_rulesyncPath, "dist", "cli", "index.js"));
         }
         else
         {
-            // Use npx
+            // Fall back to npx
             startInfo.FileName = "npx";
             startInfo.ArgumentList.Add("rulesync");
         }

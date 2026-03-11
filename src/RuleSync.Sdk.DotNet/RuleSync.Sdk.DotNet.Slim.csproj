@@ -1,4 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Slim variant of RuleSync.Sdk.DotNet without native executables.
+    This package is ~2MB instead of ~110MB, but requires Node.js at runtime.
+
+    Build with: dotnet pack src/RuleSync.Sdk.DotNet/RuleSync.Sdk.DotNet.Slim.csproj -c Release
+  -->
+
   <PropertyGroup>
     <!-- Multi-target for broad compatibility -->
     <TargetFrameworks>netstandard2.1;net6.0;net8.0</TargetFrameworks>
@@ -7,17 +14,19 @@
     <ImplicitUsings>disable</ImplicitUsings>
 
     <!-- Enable trim analyzer for compatibility warnings -->
-    <!-- Note: Full Native AOT requires source-generated JSON serialization. This SDK uses reflection-based serialization with trim annotations. -->
     <EnableTrimAnalyzer Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">true</EnableTrimAnalyzer>
 
-    <!-- NuGet Package -->
-    <PackageId>RuleSync.Sdk.DotNet</PackageId>
+    <!-- NuGet Package - Slim variant -->
+    <PackageId>RuleSync.Sdk.DotNet.Slim</PackageId>
     <RootNamespace>Rulesync.Sdk.DotNet</RootNamespace>
     <AssemblyName>RuleSync.Sdk.DotNet</AssemblyName>
-    <Description>C# SDK for RuleSync - generate AI tool configurations programmatically</Description>
+    <Description>C# SDK for RuleSync - JS-only variant (~2MB, requires Node.js). Use RuleSync.Sdk.DotNet for native executables (~110MB, no Node.js required).</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/rudironsoni/rulesync-dotnet</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rudironsoni/rulesync-dotnet</PackageProjectUrl>
+
+    <!-- Exclude native executables for slim variant -->
+    <IncludeNativeExecutables>false</IncludeNativeExecutables>
   </PropertyGroup>
 
   <!-- Source Generator Reference -->
@@ -68,9 +77,8 @@
     <None Include="$(RulesyncSubmodulePath)/package.json" Pack="true" PackagePath="tools/rulesync/" />
   </ItemGroup>
 
-  <!-- Include native executables if they exist (optional, built separately) -->
-  <!-- Set IncludeNativeExecutables=false to build slim package without native binaries -->
-  <ItemGroup Condition="'$(IncludeNativeExecutables)' != 'false'">
-    <None Include="$(MSBuildThisFileDirectory)../../native-binaries/**/*" Pack="true" PackagePath="tools/rulesync-native/" Condition="Exists('$(MSBuildThisFileDirectory)../../native-binaries')" />
-  </ItemGroup>
+  <!--
+    NOTE: Native executables are intentionally NOT included in this slim variant.
+    The SDK will fall back to using the bundled JS files with Node.js.
+  -->
 </Project>

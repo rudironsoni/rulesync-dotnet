@@ -1,11 +1,11 @@
 #nullable enable
 
 using System.Text.Json;
-using RuleSync.Sdk.Models;
-using RuleSync.Sdk.Serialization;
+using Rulesync.Sdk.DotNet.Models;
+using Rulesync.Sdk.DotNet.Serialization;
 using Xunit;
 
-namespace RuleSync.Sdk.Tests;
+namespace Rulesync.Sdk.DotNet.Tests;
 
 public class JsonContextTests
 {

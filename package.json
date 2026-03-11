@@ -1,0 +1,33 @@
+{
+  "name": "rulesync-dotnet",
+  "version": "1.0.0",
+  "description": "A C# SDK for [rulesync](https://github.com/dyoshikawa/rulesync) - generate AI tool configurations programmatically from .NET applications.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rudironsoni/rulesync-dotnet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rudironsoni/rulesync-dotnet/issues"
+  },
+  "homepage": "https://github.com/rudironsoni/rulesync-dotnet#readme",
+  "dependencies": {
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "boxednode": "^3.0.0",
+    "caxa": "^3.0.1",
+    "rollup": "^4.59.0"
+  }
+}

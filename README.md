@@ -8,6 +8,8 @@ A C# SDK for [rulesync](https://github.com/dyoshikawa/rulesync) - generate AI to
 ## Features
 
 - **Multi-target support**: .NET Standard 2.1, .NET 6.0, .NET 8.0
+- **Native executables**: Standalone binaries for Windows, macOS, and Linux (no Node.js required)
+- **Slim variant**: Small package size (~300KB) for environments with Node.js already installed
 - **Source-generated types**: Types are auto-generated from rulesync's TypeScript source at compile time
 - **Result pattern**: Functional error handling with `Result<T>`
 - **Async/await**: `ValueTask<T>` for efficient async operations
@@ -16,9 +18,17 @@ A C# SDK for [rulesync](https://github.com/dyoshikawa/rulesync) - generate AI to
 
 ### From NuGet.org
 
+**Full variant** (recommended - includes native executables):
 ```bash
 dotnet add package RuleSync.Sdk.DotNet
 ```
+
+**Slim variant** (~300KB, requires Node.js):
+```bash
+dotnet add package RuleSync.Sdk.DotNet.Slim
+```
+
+> **💡 Interchangeable**: Both packages use the same API, namespaces, and assembly name. You can switch between them at any time without changing your code - only the package ID differs.
 
 ### From GitHub Packages
 
@@ -61,16 +71,55 @@ dotnet pack src/RuleSync.Sdk.DotNet/RuleSync.Sdk.DotNet.csproj -c Release
 dotnet add package RuleSync.Sdk.DotNet --source ./src/RuleSync.Sdk.DotNet/bin/Release
 ```
 
+## Package Variants
+
+Two NuGet packages are available:
+
+| Package | Size | Node.js Required | Use Case |
+|---------|------|------------------|----------|
+| `RuleSync.Sdk.DotNet` | ~130MB | **No** | Default choice. Includes native executables for all platforms. |
+| `RuleSync.Sdk.DotNet.Slim` | ~300KB | Yes | For environments where Node.js is already available. |
+
+The full variant automatically detects your platform and uses the appropriate native executable. The SDK falls back to bundled JavaScript if no native executable is available for your platform.
+
+### Runtime Behavior
+
+Both packages use the same runtime priority:
+
+1. **Native executable** (full package only): Fastest, no Node.js needed
+2. **Bundled JavaScript**: Uses included JS bundle with system Node.js
+3. **npx**: Falls back to `npx rulesync` from npm
+
+The slim package skips step 1 (no native executables), so it requires Node.js. Your code doesn't need to change - the SDK handles this automatically.
+
+### Switching Between Packages
+
+Since both packages share the same assembly name (`RuleSync.Sdk.DotNet.dll`) and namespaces, you can switch at any time:
+
+```xml
+<!-- In your .csproj, just change the PackageReference -->
+<!-- Before: -->
+<PackageReference Include="RuleSync.Sdk.DotNet" Version="7.18.1" />
+
+<!-- After: -->
+<PackageReference Include="RuleSync.Sdk.DotNet.Slim" Version="7.18.1" />
+```
+
+No code changes required!
+
 ## Prerequisites
 
+### For RuleSync.Sdk.DotNet (full variant)
+- **No prerequisites!** Native executables are included.
+
+### For RuleSync.Sdk.DotNet.Slim (slim variant)
 - Node.js 20+ installed and available in PATH
-- rulesync npm package (used via npx)
 
 ## Quick Start
 
 ```csharp
-using RuleSync.Sdk;
-using RuleSync.Sdk.Models;
+using Rulesync.Sdk.DotNet;
+using Rulesync.Sdk.DotNet.Models;
 
 // Create client
 using var client = new RulesyncClient();

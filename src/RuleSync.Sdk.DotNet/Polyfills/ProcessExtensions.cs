@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RuleSync.Sdk.Polyfills;
+namespace Rulesync.Sdk.DotNet.Polyfills;
 
 /// <summary>Polyfill for WaitForExitAsync on .NET Standard 2.1.</summary>
 internal static class ProcessExtensions

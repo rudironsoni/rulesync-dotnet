@@ -20,6 +20,16 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: '10.28.1'
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -36,6 +46,9 @@ jobs:
 
       - name: Pack
         run: dotnet pack src/RuleSync.Sdk.DotNet/RuleSync.Sdk.DotNet.csproj --configuration Release --no-build --output ./nupkg
+
+      - name: Verify bundled rulesync
+        run: ./scripts/verify-bundled-rulesync.sh
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

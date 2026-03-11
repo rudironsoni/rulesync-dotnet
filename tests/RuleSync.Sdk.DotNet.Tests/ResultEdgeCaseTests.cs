@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace RuleSync.Sdk.Tests;
+namespace Rulesync.Sdk.DotNet.Tests;
 
 public class ResultEdgeCaseTests
 {

@@ -69,10 +69,32 @@ jobs:
           sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>$VERSION_NUMBER<\/VersionPrefix>/" src/Directory.Build.props
           echo "Updated version to $VERSION_NUMBER"
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
+      - name: Build rulesync
+        working-directory: rulesync
+        run: |
+          pnpm install
+          pnpm run build
+
+      - name: Build native executables
+        run: node src/RuleSync.Sdk.DotNet/build-native-executables.js --all
+
+      - name: List native executables
+        run: ls -la native-binaries/*/rulesync*
 
       - name: Restore dependencies
         run: dotnet restore
@@ -83,14 +105,24 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal
 
-      - name: Pack
+      - name: Pack (full variant with native executables)
         run: dotnet pack src/RuleSync.Sdk.DotNet/RuleSync.Sdk.DotNet.csproj --configuration Release --no-build --output ./nupkg
 
-      - name: Upload artifacts
+      - name: Pack (slim variant without native executables)
+        run: dotnet pack src/RuleSync.Sdk.DotNet/RuleSync.Sdk.DotNet.Slim.csproj --configuration Release --no-build --output ./nupkg
+
+      - name: Upload NuGet artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nuget-packages
           path: ./nupkg/*.nupkg
+          retention-days: 30
+
+      - name: Upload native executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-executables
+          path: native-binaries/**
           retention-days: 30
 
       - name: Publish to NuGet.org
@@ -124,6 +156,21 @@ jobs:
           echo "" >> release-notes.md
           echo "- **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER" >> release-notes.md
           echo "- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "## Native Executables" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "This release includes standalone native executables (no Node.js required):" >> release-notes.md
+          echo "- `linux-x64/rulesync` (~105 MB)" >> release-notes.md
+          echo "- `osx-x64/rulesync` (~69 MB)" >> release-notes.md
+          echo "- `osx-arm64/rulesync` (~64 MB)" >> release-notes.md
+          echo "- `win-x64/rulesync.exe` (~116 MB)" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "The NuGet package automatically uses the appropriate native executable for your platform." >> release-notes.md
+          echo "" >> release-notes.md
+          echo "## Package Variants" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "- **RuleSync.Sdk.DotNet** (~110MB): Includes native executables for all platforms. No Node.js required." >> release-notes.md
+          echo "- **RuleSync.Sdk.DotNet.Slim** (~2MB): JS-only variant. Requires Node.js installed on target machine." >> release-notes.md
           echo "" >> release-notes.md
           echo "Synced with rulesync $RULESYNC_VERSION" >> release-notes.md
 
