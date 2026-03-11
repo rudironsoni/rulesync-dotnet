@@ -68,18 +68,17 @@ jobs:
 
           echo "Updated version to $VERSION_NUMBER"
 
-      - name: Commit and tag release
+      - name: Commit, tag and push
         if: steps.check-sync.outputs.needs_sync == 'true'
         env:
           VERSION: ${{ steps.check-sync.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add rulesync src/Directory.Build.props .rulesync-version
           git commit -m "chore: sync with rulesync $VERSION"
 
-          # Handle case where tag already exists (delete and recreate)
+          # Delete tag if exists (local and remote)
           if git rev-parse "$VERSION" >/dev/null 2>&1; then
             git tag -d "$VERSION"
           fi
@@ -90,3 +89,11 @@ jobs:
           git tag "$VERSION"
           git push origin main
           git push origin "$VERSION"
+
+      - name: Trigger CI workflow
+        if: steps.check-sync.outputs.needs_sync == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: sync-complete
+          client-payload: '{"version": "${{ steps.check-sync.outputs.version }}"}'
