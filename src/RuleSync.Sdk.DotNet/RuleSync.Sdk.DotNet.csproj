@@ -38,12 +38,15 @@
   </ItemGroup>
 
   <!-- Include TypeScript files for source generation from submodule -->
+  <PropertyGroup>
+    <RulesyncSubmodulePath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)../../rulesync'))</RulesyncSubmodulePath>
+  </PropertyGroup>
   <ItemGroup>
-    <AdditionalFiles Include="../../../rulesync/src/types/features.ts" />
-    <AdditionalFiles Include="../../../rulesync/src/types/tool-targets.ts" />
-    <AdditionalFiles Include="../../../rulesync/src/lib/generate.ts" />
-    <AdditionalFiles Include="../../../rulesync/src/lib/import.ts" />
-    <AdditionalFiles Include="../../../rulesync/src/index.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/types/features.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/types/tool-targets.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/lib/generate.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/lib/import.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/index.ts" />
   </ItemGroup>
 
   <!-- Enable source-generated files output for debugging -->
