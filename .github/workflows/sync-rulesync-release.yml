@@ -1,0 +1,80 @@
+name: Sync with rulesync releases
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check-and-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest rulesync release
+        id: get-release
+        run: |
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/dyoshikawa/rulesync/releases/latest | jq -r '.tag_name // empty')
+          echo "latest=$LATEST_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "Latest rulesync release: $LATEST_RELEASE"
+
+      - name: Check if already synced
+        id: check-sync
+        run: |
+          LATEST="${{ steps.get-release.outputs.latest }}"
+          CURRENT=$(cat .rulesync-version 2>/dev/null || echo "")
+
+          if [ "$LATEST" = "$CURRENT" ]; then
+            echo "Already synced to $LATEST"
+            echo "needs_sync=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Needs sync: $CURRENT -> $LATEST"
+            echo "needs_sync=true" >> "$GITHUB_OUTPUT"
+            echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update submodule
+        if: steps.check-sync.outputs.needs_sync == 'true'
+        run: |
+          VERSION="${{ steps.check-sync.outputs.version }}"
+          cd rulesync
+          git fetch origin
+          git checkout "$VERSION"
+          cd ..
+
+      - name: Update version in Directory.Build.props
+        if: steps.check-sync.outputs.needs_sync == 'true'
+        run: |
+          VERSION="${{ steps.check-sync.outputs.version }}"
+          VERSION_NUMBER="${VERSION#v}"
+
+          sed -i "s/<Version>.*<\/Version>/<Version>$VERSION_NUMBER<\/Version>/" src/Directory.Build.props
+          sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>$VERSION_NUMBER<\/VersionPrefix>/" src/Directory.Build.props
+
+          echo "$VERSION" > .rulesync-version
+
+          echo "Updated version to $VERSION_NUMBER"
+
+      - name: Create Pull Request
+        if: steps.check-sync.outputs.needs_sync == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: sync with rulesync ${{ steps.check-sync.outputs.version }}'
+          title: 'chore: sync with rulesync ${{ steps.check-sync.outputs.version }}'
+          body: |
+            This PR syncs the .NET SDK with the latest rulesync release.
+
+            - Updated rulesync submodule to ${{ steps.check-sync.outputs.version }}
+            - Updated version in Directory.Build.props to ${{ steps.check-sync.outputs.version }}
+
+            Once merged, tag the commit with `${{ steps.check-sync.outputs.version }}` to trigger the release workflow.
+          branch: sync/rulesync-${{ steps.check-sync.outputs.version }}
+          delete-branch: true
