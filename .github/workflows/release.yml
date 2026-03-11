@@ -98,37 +98,55 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: dotnet nuget push ./nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Create GitHub Release
+      - name: Fetch rulesync release notes
+        id: rulesync-notes
+        run: |
+          RULESYNC_VERSION=$(cat .rulesync-version 2>/dev/null || echo '')
+          if [ -n "$RULESYNC_VERSION" ]; then
+            curl -s "https://api.github.com/repos/dyoshikawa/rulesync/releases/tags/$RULESYNC_VERSION" | jq -r '.body // "No release notes available"' > rulesync-notes.md
+          else
+            echo "Synced with rulesync" > rulesync-notes.md
+          fi
+
+      - name: Create release notes
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_OWNER: ${{ github.repository_owner }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
           VERSION_NUMBER="${VERSION#v}"
+          IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
+          RULESYNC_VERSION=$(cat .rulesync-version 2>/dev/null || echo 'unknown')
+
+          cat > release-notes.md << EOF
+## RuleSync Release Notes
+
+$(cat rulesync-notes.md)
+
+## .NET SDK Packages
+
+- **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
+- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet
+
+Synced with rulesync $RULESYNC_VERSION
+EOF
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
 
           if [ "$IS_PRERELEASE" == "true" ]; then
             PRERELEASE_FLAG="--prerelease"
-            NOTES="Pre-release build from main branch (synced with rulesync v$(cat .rulesync-version 2>/dev/null || echo 'unknown'))
-
-## Packages
-
-- **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
-- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet"
           else
             PRERELEASE_FLAG=""
-            NOTES="Release $VERSION
-
-## Packages
-
-- **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
-- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet"
           fi
 
           gh release create "$VERSION" \
             ./nupkg/*.nupkg \
             --title "$VERSION" \
-            --notes "$NOTES" \
+            --notes-file release-notes.md \
             $PRERELEASE_FLAG
 
       - name: Publish to GitHub Packages
