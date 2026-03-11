@@ -13,13 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Get latest rulesync release
         id: get-release
@@ -45,8 +45,9 @@ jobs:
 
       - name: Update submodule
         if: steps.check-sync.outputs.needs_sync == 'true'
+        env:
+          VERSION: ${{ steps.check-sync.outputs.version }}
         run: |
-          VERSION="${{ steps.check-sync.outputs.version }}"
           cd rulesync
           git fetch --unshallow origin || git fetch origin
           git fetch origin tag "$VERSION"
@@ -55,8 +56,9 @@ jobs:
 
       - name: Update version in Directory.Build.props
         if: steps.check-sync.outputs.needs_sync == 'true'
+        env:
+          VERSION: ${{ steps.check-sync.outputs.version }}
         run: |
-          VERSION="${{ steps.check-sync.outputs.version }}"
           VERSION_NUMBER="${VERSION#v}"
 
           sed -i "s/<Version>.*<\/Version>/<Version>$VERSION_NUMBER<\/Version>/" src/Directory.Build.props
@@ -66,19 +68,25 @@ jobs:
 
           echo "Updated version to $VERSION_NUMBER"
 
-      - name: Create Pull Request
+      - name: Commit and tag release
         if: steps.check-sync.outputs.needs_sync == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'chore: sync with rulesync ${{ steps.check-sync.outputs.version }}'
-          title: 'chore: sync with rulesync ${{ steps.check-sync.outputs.version }}'
-          body: |
-            This PR syncs the .NET SDK with the latest rulesync release.
+        env:
+          VERSION: ${{ steps.check-sync.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-            - Updated rulesync submodule to ${{ steps.check-sync.outputs.version }}
-            - Updated version in Directory.Build.props to ${{ steps.check-sync.outputs.version }}
+          git add rulesync src/Directory.Build.props .rulesync-version
+          git commit -m "chore: sync with rulesync $VERSION"
 
-            Once merged, tag the commit with `${{ steps.check-sync.outputs.version }}` to trigger the release workflow.
-          branch: sync/rulesync-${{ steps.check-sync.outputs.version }}
-          delete-branch: true
+          # Handle case where tag already exists (delete and recreate)
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            git tag -d "$VERSION"
+          fi
+          if git ls-remote --tags origin "$VERSION" | grep -q "$VERSION"; then
+            git push --delete origin "$VERSION"
+          fi
+
+          git tag "$VERSION"
+          git push origin main
+          git push origin "$VERSION"
