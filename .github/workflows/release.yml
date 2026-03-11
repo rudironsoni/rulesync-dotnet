@@ -114,23 +114,18 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           VERSION_NUMBER="${VERSION#v}"
-          IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
           RULESYNC_VERSION=$(cat .rulesync-version 2>/dev/null || echo 'unknown')
 
-          cat > release-notes.md << 'EOF'
-## RuleSync Release Notes
-
-EOF
+          echo "## RuleSync Release Notes" > release-notes.md
+          echo "" >> release-notes.md
           cat rulesync-notes.md >> release-notes.md
-          cat >> release-notes.md << EOF
-
-## .NET SDK Packages
-
-- **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER
-- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet
-
-Synced with rulesync $RULESYNC_VERSION
-EOF
+          echo "" >> release-notes.md
+          echo "## .NET SDK Packages" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "- **NuGet**: https://www.nuget.org/packages/RuleSync.Sdk.DotNet/$VERSION_NUMBER" >> release-notes.md
+          echo "- **GitHub Packages**: https://github.com/$REPO_OWNER/rulesync-dotnet/pkgs/nuget/RuleSync.Sdk.DotNet" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "Synced with rulesync $RULESYNC_VERSION" >> release-notes.md
 
       - name: Create GitHub Release
         env:
