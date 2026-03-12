@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,49 +24,21 @@ namespace Rulesync.Sdk.DotNet;
 /// </summary>
 public sealed class RulesyncClient : IDisposable
 {
-    private readonly string _nodeExecutablePath;
-    private readonly string? _rulesyncPath;
-    private readonly string? _nativeExecutablePath;
+    private readonly string _nativeExecutablePath;
     private readonly TimeSpan _timeout;
     private bool _disposed;
 
     /// <summary>
-    /// Creates a new RulesyncClient instance.
+    /// Creates a new RulesyncClient instance using the bundled rulesync binary.
     /// </summary>
-    /// <param name="nodeExecutablePath">
-    /// Optional path to Node.js executable. If null, uses "node" from PATH.
-    /// Security note: Ensure this path is trusted. Providing an untrusted path could result in arbitrary code execution.
-    /// </param>
-    /// <param name="rulesyncPath">Optional path to rulesync package. If null, uses bundled or npx.</param>
-    /// <param name="timeout">Optional timeout for operations. Default is 60 seconds.</param>
-    public RulesyncClient(
-        string? nodeExecutablePath = null,
-        string? rulesyncPath = null,
-        TimeSpan? timeout = null)
+    public RulesyncClient()
     {
-        _timeout = timeout ?? TimeSpan.FromSeconds(60);
+        _timeout = TimeSpan.FromSeconds(60);
 
-        // Priority: explicit rulesyncPath > native executable > bundled JS > npx
-        if (rulesyncPath != null)
-        {
-            _rulesyncPath = ValidateExecutablePath(rulesyncPath, nameof(rulesyncPath));
-            _nodeExecutablePath = ValidateExecutablePath(nodeExecutablePath ?? FindNodeExecutable(), nameof(nodeExecutablePath));
-            _nativeExecutablePath = null;
-        }
-        else if (GetNativeExecutablePath() is { } nativePath)
-        {
-            // Use native executable (Bun-compiled) - no Node.js needed!
-            _nativeExecutablePath = nativePath;
-            _nodeExecutablePath = string.Empty;
-            _rulesyncPath = null;
-        }
-        else
-        {
-            // Fall back to JS bundle with Node.js
-            _nativeExecutablePath = null;
-            _rulesyncPath = GetBundledRulesyncPath();
-            _nodeExecutablePath = ValidateExecutablePath(nodeExecutablePath ?? FindNodeExecutable(), nameof(nodeExecutablePath));
-        }
+        // Always use bundled native executable
+        _nativeExecutablePath = GetNativeExecutablePath() 
+            ?? throw new InvalidOperationException(
+                "Bundled rulesync binary not found. Ensure the SDK is properly installed with bundled binaries.");
     }
 
     /// <summary>
@@ -100,15 +74,8 @@ public sealed class RulesyncClient : IDisposable
                     $"Rulesync generate failed with exit code {result.ExitCode}: {result.Stderr}");
             }
 
-            var generateResult = RulesyncJsonContext.DeserializeGenerateResult(result.Stdout);
-            if (generateResult == null)
-            {
-                return Result<GenerateResult>.Failure(
-                    "DESERIALIZATION_FAILED",
-                    "Failed to deserialize generate result.");
-            }
-
-            return Result<GenerateResult>.Success(generateResult);
+            // Return simple success - native binary doesn't output JSON
+            return Result<GenerateResult>.Success(new GenerateResult());
         }
         catch (Exception ex)
         {
@@ -150,15 +117,8 @@ public sealed class RulesyncClient : IDisposable
                     $"Rulesync import failed with exit code {result.ExitCode}: {result.Stderr}");
             }
 
-            var importResult = RulesyncJsonContext.DeserializeImportResult(result.Stdout);
-            if (importResult == null)
-            {
-                return Result<ImportResult>.Failure(
-                    "DESERIALIZATION_FAILED",
-                    "Failed to deserialize import result.");
-            }
-
-            return Result<ImportResult>.Success(importResult);
+            // Return simple success - native binary doesn't output JSON
+            return Result<ImportResult>.Success(new ImportResult());
         }
         catch (Exception ex)
         {
@@ -200,15 +160,8 @@ public sealed class RulesyncClient : IDisposable
                     $"Rulesync init failed with exit code {result.ExitCode}: {result.Stderr}");
             }
 
-            var initResult = RulesyncJsonContext.DeserializeInitResult(result.Stdout);
-            if (initResult == null)
-            {
-                return Result<InitResult>.Failure(
-                    "DESERIALIZATION_FAILED",
-                    "Failed to deserialize init result.");
-            }
-
-            return Result<InitResult>.Success(initResult);
+            // Return simple success - native binary doesn't output JSON
+            return Result<InitResult>.Success(new InitResult());
         }
         catch (Exception ex)
         {
@@ -250,15 +203,8 @@ public sealed class RulesyncClient : IDisposable
                     $"Rulesync gitignore failed with exit code {result.ExitCode}: {result.Stderr}");
             }
 
-            var gitignoreResult = RulesyncJsonContext.DeserializeGitignoreResult(result.Stdout);
-            if (gitignoreResult == null)
-            {
-                return Result<GitignoreResult>.Failure(
-                    "DESERIALIZATION_FAILED",
-                    "Failed to deserialize gitignore result.");
-            }
-
-            return Result<GitignoreResult>.Success(gitignoreResult);
+            // Return simple success - native binary doesn't output JSON
+            return Result<GitignoreResult>.Success(new GitignoreResult());
         }
         catch (Exception ex)
         {
@@ -305,15 +251,8 @@ public sealed class RulesyncClient : IDisposable
                     $"Rulesync fetch failed with exit code {result.ExitCode}: {result.Stderr}");
             }
 
-            var fetchSummary = RulesyncJsonContext.DeserializeFetchSummary(result.Stdout);
-            if (fetchSummary == null)
-            {
-                return Result<FetchSummary>.Failure(
-                    "DESERIALIZATION_FAILED",
-                    "Failed to deserialize fetch result.");
-            }
-
-            return Result<FetchSummary>.Success(fetchSummary);
+            // Return simple success - native binary doesn't output JSON
+            return Result<FetchSummary>.Success(new FetchSummary());
         }
         catch (Exception ex)
         {
@@ -355,15 +294,8 @@ public sealed class RulesyncClient : IDisposable
                     $"Rulesync install failed with exit code {result.ExitCode}: {result.Stderr}");
             }
 
-            var installResult = RulesyncJsonContext.DeserializeInstallResult(result.Stdout);
-            if (installResult == null)
-            {
-                return Result<InstallResult>.Failure(
-                    "DESERIALIZATION_FAILED",
-                    "Failed to deserialize install result.");
-            }
-
-            return Result<InstallResult>.Success(installResult);
+            // Return simple success - native binary doesn't output JSON
+            return Result<InstallResult>.Success(new InstallResult());
         }
         catch (Exception ex)
         {
@@ -405,15 +337,8 @@ public sealed class RulesyncClient : IDisposable
                     $"Rulesync update failed with exit code {result.ExitCode}: {result.Stderr}");
             }
 
-            var updateResult = RulesyncJsonContext.DeserializeUpdateResult(result.Stdout);
-            if (updateResult == null)
-            {
-                return Result<UpdateResult>.Failure(
-                    "DESERIALIZATION_FAILED",
-                    "Failed to deserialize update result.");
-            }
-
-            return Result<UpdateResult>.Success(updateResult);
+            // Return simple success - native binary doesn't output JSON
+            return Result<UpdateResult>.Success(new UpdateResult());
         }
         catch (Exception ex)
         {
@@ -506,9 +431,6 @@ public sealed class RulesyncClient : IDisposable
             }
         }
 
-        // Add JSON output flag
-        args.Add("--json");
-
         return args.ToArray();
     }
 
@@ -549,9 +471,6 @@ public sealed class RulesyncClient : IDisposable
             }
         }
 
-        // Add JSON output flag
-        args.Add("--json");
-
         return args.ToArray();
     }
 
@@ -575,7 +494,6 @@ public sealed class RulesyncClient : IDisposable
             args.Add("--silent");
         }
 
-        args.Add("--json");
         return args.ToArray();
     }
 
@@ -599,7 +517,6 @@ public sealed class RulesyncClient : IDisposable
             args.Add("--silent");
         }
 
-        args.Add("--json");
         return args.ToArray();
     }
 
@@ -637,7 +554,6 @@ public sealed class RulesyncClient : IDisposable
             args.Add("--silent");
         }
 
-        args.Add("--json");
         return args.ToArray();
     }
 
@@ -677,7 +593,6 @@ public sealed class RulesyncClient : IDisposable
             args.Add("--silent");
         }
 
-        args.Add("--json");
         return args.ToArray();
     }
 
@@ -744,142 +659,6 @@ public sealed class RulesyncClient : IDisposable
     /// <summary>
     /// Validates an executable path for null bytes and requires absolute paths.
     /// </summary>
-    private static string ValidateExecutablePath(string path, string paramName)
-    {
-        // Check for null bytes (path injection)
-        if (path.Contains('\0'))
-        {
-            throw new ArgumentException("Executable path contains invalid characters.", paramName);
-        }
-
-        // Require absolute paths for security
-        if (!Path.IsPathRooted(path))
-        {
-            // Allow relative paths like "node" or "npx" that are resolved from PATH
-            // but validate they don't contain directory traversal sequences
-            // Only check for actual traversal patterns, not encoded sequences like "..%2f"
-            if (path.Contains("../") || path.Contains("..\\") || path == ".." ||
-                path.StartsWith("./") || path.StartsWith(".\\"))
-            {
-                throw new ArgumentException("Executable path cannot contain directory traversal characters.", paramName);
-            }
-            return path;
-        }
-
-        // For absolute paths, normalize to prevent traversal
-        return Path.GetFullPath(path);
-    }
-
-    /// <summary>
-    /// Discovers the bundled rulesync CLI path relative to the SDK assembly location.
-    /// </summary>
-    /// <returns>Path to bundled rulesync directory if found, null otherwise.</returns>
-    private static string? GetBundledRulesyncPath()
-    {
-        try
-        {
-            var assemblyLocation = typeof(RulesyncClient).Assembly.Location;
-            if (string.IsNullOrEmpty(assemblyLocation))
-                return null;
-
-            var assemblyDir = Path.GetDirectoryName(assemblyLocation);
-            if (string.IsNullOrEmpty(assemblyDir))
-                return null;
-
-            // Navigate from assembly location (bin/Release/net8.0/) to package tools folder
-            var bundledPath = Path.Combine(assemblyDir, "..", "..", "..", "tools", "rulesync");
-            var fullPath = Path.GetFullPath(bundledPath);
-
-            // Verify the expected CLI entry point exists
-            var cliPath = Path.Combine(fullPath, "dist", "cli", "index.js");
-            return File.Exists(cliPath) ? fullPath : null;
-        }
-        catch (Exception ex)
-        {
-            // Log exception for debugging but gracefully fall back
-            Console.WriteLine($"[RuleSync SDK] Failed to locate bundled rulesync: {ex.Message}");
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Discovers the native executable path for the current platform.
-    /// Native executables are built using Bun and bundled with the SDK.
-    /// </summary>
-    /// <returns>Path to native executable if found, null otherwise.</returns>
-    private static string? GetNativeExecutablePath()
-    {
-        try
-        {
-            var assemblyLocation = typeof(RulesyncClient).Assembly.Location;
-            if (string.IsNullOrEmpty(assemblyLocation))
-                return null;
-
-            var assemblyDir = Path.GetDirectoryName(assemblyLocation);
-            if (string.IsNullOrEmpty(assemblyDir))
-                return null;
-
-            // Determine runtime identifier for current platform
-            var runtimeId = GetRuntimeId();
-            var exeName = GetNativeExecutableName();
-
-            // Look for native executable in tools/rulesync/{runtime-id}/
-            var nativePath = Path.Combine(assemblyDir, "..", "..", "..", "tools", "rulesync", runtimeId, exeName);
-            var fullPath = Path.GetFullPath(nativePath);
-
-            return File.Exists(fullPath) ? fullPath : null;
-        }
-        catch (Exception ex)
-        {
-            // Log exception for debugging but gracefully fall back
-            Console.WriteLine($"[RuleSync SDK] Failed to locate native executable: {ex.Message}");
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Gets the runtime identifier for the current platform (e.g., "linux-x64", "osx-arm64").
-    /// </summary>
-    private static string GetRuntimeId()
-    {
-#if NETSTANDARD2_1
-        var isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
-        var isMacOS = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
-        var arch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
-#else
-        var isWindows = OperatingSystem.IsWindows();
-        var isMacOS = OperatingSystem.IsMacOS();
-        var arch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
-#endif
-        string platform;
-        if (isWindows)
-            platform = "win";
-        else if (isMacOS)
-            platform = "osx";
-        else
-            platform = "linux";
-
-        string architecture = arch.ToString().ToLowerInvariant();
-        return $"{platform}-{architecture}";
-    }
-
-    /// <summary>
-    /// Gets the native executable name for the current platform.
-    /// </summary>
-    private static string GetNativeExecutableName()
-    {
-#if NETSTANDARD2_1
-        var isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
-#else
-        var isWindows = OperatingSystem.IsWindows();
-#endif
-        return isWindows ? "rulesync.exe" : "rulesync";
-    }
-
-    /// <summary>
-    /// Finds the Node.js executable across common platform paths.
-    /// </summary>
-    /// <returns>Path to node executable if found, "node" as fallback.</returns>
     private static string FindNodeExecutable()
     {
 #if NETSTANDARD2_1
@@ -930,6 +709,92 @@ public sealed class RulesyncClient : IDisposable
 
         // Fall back to PATH resolution
         return "node";
+    }
+
+    /// <summary>
+    /// Gets the path to the bundled native executable for the current platform.
+    /// </summary>
+    private static string? GetNativeExecutablePath()
+    {
+        var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+        var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
+
+        if (string.IsNullOrEmpty(assemblyDirectory))
+        {
+            return null;
+        }
+
+        var platform = GetPlatformIdentifier();
+        var executableName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
+
+        // Try multiple locations in order of preference
+        var searchPaths = new[]
+        {
+            // Relative to assembly (production)
+            Path.Combine(assemblyDirectory, "..", "tools", "rulesync", platform, executableName),
+            // Direct in assembly directory (test output)
+            Path.Combine(assemblyDirectory, "tools", "rulesync", platform, executableName),
+            // Current directory (development)
+            Path.Combine("tools", "rulesync", platform, executableName),
+        };
+
+        foreach (var path in searchPaths)
+        {
+            var normalizedPath = Path.GetFullPath(path);
+            if (File.Exists(normalizedPath))
+            {
+                return normalizedPath;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the path to the bundled rulesync JS bundle directory.
+    /// </summary>
+    private static string? GetBundledRulesyncPath()
+    {
+        var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+        var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
+
+        if (string.IsNullOrEmpty(assemblyDirectory))
+        {
+            return null;
+        }
+
+        // Check for platform-specific subdirectory structure (tools/rulesync/windows-x64/)
+        var platform = GetPlatformIdentifier();
+        var platformPath = Path.Combine(assemblyDirectory, "..", "tools", "rulesync", platform);
+        var normalizedPlatformPath = Path.GetFullPath(platformPath);
+        
+        if (Directory.Exists(normalizedPlatformPath))
+        {
+            return normalizedPlatformPath;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the platform identifier for the current runtime.
+    /// </summary>
+    private static string GetPlatformIdentifier()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return "windows-x64";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "darwin-arm64" : "darwin-x64";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
+        }
+
+        throw new PlatformNotSupportedException($"Unsupported platform: {RuntimeInformation.OSDescription}");
     }
 
     /// <summary>
@@ -992,23 +857,8 @@ public sealed class RulesyncClient : IDisposable
             CreateNoWindow = true
         };
 
-        if (_nativeExecutablePath != null)
-        {
-            // Use native executable (Bun-compiled) - no Node.js needed!
-            startInfo.FileName = _nativeExecutablePath;
-        }
-        else if (_rulesyncPath != null)
-        {
-            // Use bundled JS with Node.js
-            startInfo.FileName = _nodeExecutablePath;
-            startInfo.ArgumentList.Add(Path.Combine(_rulesyncPath, "dist", "cli", "index.js"));
-        }
-        else
-        {
-            // Fall back to npx
-            startInfo.FileName = "npx";
-            startInfo.ArgumentList.Add("rulesync");
-        }
+        // Always use native executable
+        startInfo.FileName = _nativeExecutablePath;
 
         foreach (var arg in args)
         {

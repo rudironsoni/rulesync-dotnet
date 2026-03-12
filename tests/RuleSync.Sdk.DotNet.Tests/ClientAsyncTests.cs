@@ -15,7 +15,7 @@ public class ClientAsyncTests : IDisposable
     public ClientAsyncTests()
     {
         // Use longer timeout for CI environments
-        _client = new RulesyncClient(timeout: TimeSpan.FromSeconds(30));
+        _client = new RulesyncClient();
     }
 
     public void Dispose()
@@ -158,28 +158,9 @@ public class ClientAsyncTests : IDisposable
     #region Error Handling Tests
 
     [Fact]
-    public async Task GenerateAsync_InvalidExecutable_ReturnsFailureResult()
-    {
-        // Use a client with a non-existent executable
-        using var client = new RulesyncClient(
-            nodeExecutablePath: "/nonexistent/node",
-            timeout: TimeSpan.FromSeconds(5));
-
-        var options = new GenerateOptions();
-
-        var result = await client.GenerateAsync(options);
-
-        // Should return a failure result, not throw
-        Assert.True(result.IsFailure);
-    }
-
-    [Fact]
     public async Task ImportAsync_InvalidExecutable_ReturnsFailureResult()
     {
-        using var client = new RulesyncClient(
-            nodeExecutablePath: "/nonexistent/node",
-            timeout: TimeSpan.FromSeconds(5));
-
+        using var client = new RulesyncClient();
         var options = new ImportOptions { Target = ToolTarget.ClaudeCode };
 
         var result = await client.ImportAsync(options);

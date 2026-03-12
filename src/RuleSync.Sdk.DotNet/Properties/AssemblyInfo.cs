@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
 
-// Allow test project to access internal members
 [assembly: InternalsVisibleTo("RuleSync.Sdk.DotNet.Tests")]
+
+// Allow tests to access internal JSON context for deserialization testing

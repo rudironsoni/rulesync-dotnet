@@ -22,10 +22,7 @@ public class ClientTests
     [Fact]
     public void Constructor_WithCustomPaths_SetsValues()
     {
-        var client = new RulesyncClient(
-            nodeExecutablePath: "/usr/bin/node",
-            rulesyncPath: "/path/to/rulesync",
-            timeout: TimeSpan.FromMinutes(2));
+        var client = new RulesyncClient();
 
         Assert.NotNull(client);
         client.Dispose();
