@@ -67,39 +67,45 @@ jobs:
         run: |
           mkdir -p tools/rulesync
           
-          # Download all platform binaries
-          PLATFORMS=("linux-x64" "linux-arm64" "darwin-x64" "darwin-arm64" "windows-x64")
+          # Download all platform binaries (raw executables, not zip files)
+          declare -A PLATFORMS=(
+            ["linux-x64"]="rulesync-linux-x64"
+            ["linux-arm64"]="rulesync-linux-arm64"
+            ["darwin-x64"]="rulesync-darwin-x64"
+            ["darwin-arm64"]="rulesync-darwin-arm64"
+            ["windows-x64"]="rulesync-windows-x64.exe"
+          )
           
-          for PLATFORM in "${PLATFORMS[@]}"; do
-            echo "Downloading rulesync $VERSION for $PLATFORM..."
-            curl -fL -o "tools/rulesync/rulesync-${PLATFORM}.zip" \
-              "https://github.com/dyoshikawa/rulesync/releases/download/${VERSION}/rulesync-${PLATFORM}.zip" || {
-              echo "ERROR: Failed to download rulesync-${PLATFORM}.zip for version ${VERSION}"
+          for DIR in "${!PLATFORMS[@]}"; do
+            BINARY="${PLATFORMS[$DIR]}"
+            OUTFILE="$DIR/rulesync"
+            if [[ "$DIR" == "windows-x64" ]]; then
+              OUTFILE="$DIR/rulesync.exe"
+            fi
+            
+            echo "Downloading $BINARY for $VERSION..."
+            mkdir -p "tools/rulesync/$DIR"
+            curl -fL -o "tools/rulesync/$OUTFILE" \
+              "https://github.com/dyoshikawa/rulesync/releases/download/${VERSION}/${BINARY}" || {
+              echo "ERROR: Failed to download $BINARY for version ${VERSION}"
               exit 1
             }
           done
           
           echo "Downloaded all platform binaries"
-          ls -la tools/rulesync/
+          ls -la tools/rulesync/*/
 
-      - name: Extract and organize binaries
+      - name: Make Unix binaries executable
         if: steps.check-sync.outputs.needs_sync == 'true'
         run: |
-          cd tools/rulesync
-          
-          # Extract each platform
-          for ZIP in *.zip; do
-            PLATFORM=$(basename "$ZIP" .zip)
-            mkdir -p "$PLATFORM"
-            unzip -o "$ZIP" -d "$PLATFORM"
-            rm "$ZIP"
-          done
-          
           # Make Unix binaries executable
-          chmod +x linux-x64/rulesync linux-arm64/rulesync darwin-x64/rulesync darwin-arm64/rulesync 2>/dev/null || true
+          chmod +x tools/rulesync/linux-x64/rulesync \
+            tools/rulesync/linux-arm64/rulesync \
+            tools/rulesync/darwin-x64/rulesync \
+            tools/rulesync/darwin-arm64/rulesync 2>/dev/null || true
           
-          cd ../..
           echo "Organized binaries in tools/rulesync/"
+          ls -la tools/rulesync/*/
 
       - name: Update submodule to matching tag
         if: steps.check-sync.outputs.needs_sync == 'true'
