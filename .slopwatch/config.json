@@ -1,0 +1,10 @@
+{
+  "suppressions": [
+    {
+      "ruleId": "SW003",
+      "pattern": "**/node_modules/**",
+      "justification": "Third-party dependency code not owned by this repository"
+    }
+  ],
+  "globalSuppressions": []
+}

@@ -217,16 +217,10 @@ public class BundledRulesyncTests
         Assert.Contains("\"version\":", content);
     }
 
-    [Fact(Skip = "Requires actual rulesync execution - run manually or in CI with bundled package")]
+    [Fact]
     public async Task RulesyncClient_WithBundledRulesync_CanExecuteGenerate()
     {
         var bundledPath = GetBundledRulesyncPath();
-
-        // Skip if bundled rulesync is not available
-        if (bundledPath == null)
-        {
-            return;
-        }
 
         using var client = new RulesyncClient(
             nodeExecutablePath: "node",
@@ -245,16 +239,10 @@ public class BundledRulesyncTests
         Assert.True(result.IsSuccess, $"Bundled rulesync should execute successfully: {result.Error.Message}");
     }
 
-    [Fact(Skip = "Requires actual rulesync execution - run manually or in CI with bundled package")]
+    [Fact]
     public async Task RulesyncClient_WithBundledRulesync_CanExecuteImport()
     {
         var bundledPath = GetBundledRulesyncPath();
-
-        // Skip if bundled rulesync is not available
-        if (bundledPath == null)
-        {
-            return;
-        }
 
         using var client = new RulesyncClient(
             nodeExecutablePath: "node",

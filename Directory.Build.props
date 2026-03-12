@@ -10,8 +10,7 @@
     <Copyright>Copyright (c) $(Company) $([System.DateTime]::Now.Year)</Copyright>
 
     <!-- Build Configuration -->
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <WarningsAsErrors />
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- Packaging -->
     <Authors>RuleSync Contributors</Authors>
