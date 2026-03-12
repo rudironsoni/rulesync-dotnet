@@ -54,19 +54,21 @@ public class BundledPackageFixture
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            return "win-x64";
+            return "windows-x64";
         }
         
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
             return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 
-                ? "osx-arm64" 
-                : "osx-x64";
+                ? "darwin-arm64" 
+                : "darwin-x64";
         }
         
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            return "linux-x64";
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                ? "linux-arm64"
+                : "linux-x64";
         }
         
         throw new PlatformNotSupportedException(
