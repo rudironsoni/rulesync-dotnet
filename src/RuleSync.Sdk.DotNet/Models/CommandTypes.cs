@@ -80,7 +80,7 @@ public sealed class InitResult
     /// The configuration file that was created.
     /// </summary>
     [JsonPropertyName("configFile")]
-    public InitFileResult ConfigFile { get; init; } = default!;
+    public InitFileResult? ConfigFile { get; init; }
 
     /// <summary>
     /// Sample files that were created.

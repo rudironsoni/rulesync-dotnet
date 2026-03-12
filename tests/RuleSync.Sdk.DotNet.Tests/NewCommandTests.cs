@@ -23,7 +23,7 @@ public class NewCommandTests
         var result = await client.InitAsync(options);
 
         // Should complete without throwing
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -104,7 +104,7 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class NewCommandTests
 
         var result = await client.FetchAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public class NewCommandTests
 
         var result = await client.FetchAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -193,7 +193,7 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -235,7 +235,7 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -263,7 +263,7 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -277,7 +277,7 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -305,7 +305,7 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -337,7 +337,7 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -353,7 +353,7 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -372,7 +372,7 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -390,7 +390,7 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     #endregion
@@ -404,7 +404,7 @@ public class NewCommandTests
 
         var result = await client.InitAsync(null);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -414,7 +414,7 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(null);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -424,7 +424,7 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(null);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     [Fact]
@@ -434,7 +434,7 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(null);
 
-        Assert.NotNull(result);
+        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type, check it has a state
     }
 
     #endregion

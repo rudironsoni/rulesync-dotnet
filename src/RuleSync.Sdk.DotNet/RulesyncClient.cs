@@ -607,8 +607,8 @@ public sealed class RulesyncClient : IDisposable
     {
         var args = new List<string> { "fetch" };
 
-        // Source is required
-        args.Add(options.Source!);
+        // Source is required (validated by caller)
+        args.Add(options.Source);
 
         if (!string.IsNullOrEmpty(options.Path))
         {
