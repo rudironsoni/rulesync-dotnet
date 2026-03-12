@@ -13,7 +13,10 @@ env:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,14 +54,9 @@ jobs:
         run: dotnet test --configuration Release --no-build --verbosity normal
 
       - name: Pack
+        if: matrix.os == 'ubuntu-latest'
         run: dotnet pack src/RuleSync.Sdk.DotNet/RuleSync.Sdk.DotNet.csproj --configuration Release --no-build --output ./nupkg
 
       - name: Verify bundled rulesync
+        if: matrix.os == 'ubuntu-latest'
         run: ./scripts/verify-bundled-rulesync.sh
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-packages
-          path: ./nupkg/*.nupkg
-          retention-days: 7
