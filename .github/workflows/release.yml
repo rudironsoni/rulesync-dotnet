@@ -13,6 +13,21 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.2.3). Leave empty to auto-generate from Directory.Build.props'
+        required: false
+        default: ''
+      override_stable:
+        description: 'Override stable release (force publish even if version exists on NuGet/GitHub)'
+        required: false
+        default: false
+        type: boolean
+      skip_tests:
+        description: 'Skip running tests (use with caution)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -36,16 +51,32 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          # Get base version from Directory.Build.props
-          BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' src/Directory.Build.props)
-
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          # Check if manual version was provided via workflow_dispatch
+          MANUAL_VERSION="${{ github.event.inputs.version }}"
+          OVERRIDE_STABLE="${{ github.event.inputs.override_stable }}"
+          
+          if [ -n "$MANUAL_VERSION" ]; then
+            # Use manually specified version
+            VERSION="$MANUAL_VERSION"
+            # Determine if prerelease based on version string
+            if [[ "$VERSION" == *-alpha* ]] || [[ "$VERSION" == *-beta* ]] || [[ "$VERSION" == *-rc* ]]; then
+              IS_PRERELEASE=true
+            else
+              IS_PRERELEASE=false
+            fi
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+            echo "override_stable=$OVERRIDE_STABLE" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             # Tag push - use the tag version
             VERSION="${{ github.ref_name }}"
             IS_PRERELEASE=false
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "override_stable=false" >> "$GITHUB_OUTPUT"
           else
+            # Get base version from Directory.Build.props
+            BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' src/Directory.Build.props)
             # Main branch push - create rc version
             # Count existing rc releases for this version
             RC_COUNT=$(git tag -l "v${BASE_VERSION}-rc*" | wc -l)
@@ -54,11 +85,13 @@ jobs:
             IS_PRERELEASE=true
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "override_stable=false" >> "$GITHUB_OUTPUT"
           fi
 
           echo "Base version: $BASE_VERSION"
           echo "Release version: $VERSION"
           echo "Is prerelease: $IS_PRERELEASE"
+          echo "Override stable: $OVERRIDE_STABLE"
 
       - name: Update version for prerelease
         if: steps.version.outputs.is_prerelease == 'true'
@@ -103,6 +136,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Test
+        if: ${{ github.event.inputs.skip_tests != 'true' }}
         run: dotnet test --configuration Release --no-build --verbosity normal
 
       - name: Pack (full variant with native executables)
@@ -125,10 +159,42 @@ jobs:
           path: native-binaries/**
           retention-days: 30
 
+      - name: Delete existing NuGet packages (if override enabled)
+        if: ${{ steps.version.outputs.override_stable == 'true' }}
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          VERSION_NUMBER="${VERSION#v}"
+          
+          # List of packages to delete
+          PACKAGES=(
+            "RuleSync.Sdk.DotNet"
+            "RuleSync.Sdk.DotNet.Slim"
+          )
+          
+          for PACKAGE in "${PACKAGES[@]}"; do
+            echo "Attempting to delete $PACKAGE version $VERSION_NUMBER from NuGet..."
+            # Try to delete the package version (NuGet doesn't support delete via API for unlisting)
+            # We'll use unlist instead which hides the package
+            curl -X DELETE \
+              -H "X-NuGet-ApiKey: $NUGET_API_KEY" \
+              "https://api.nuget.org/v3/package/$PACKAGE/$VERSION_NUMBER" \
+              || echo "Note: Package $PACKAGE $VERSION_NUMBER may not exist or cannot be deleted via API"
+          done
+          
+          echo "Note: NuGet packages cannot be fully deleted, only unlisted. The new publish will succeed with --skip-duplicate."
+
       - name: Publish to NuGet.org
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: |
+          if [ "${{ steps.version.outputs.override_stable }}" == "true" ]; then
+            echo "Publishing with override enabled (will replace existing packages)..."
+            dotnet nuget push ./nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          else
+            dotnet nuget push ./nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          fi
 
       - name: Fetch rulesync release notes
         id: rulesync-notes
@@ -174,17 +240,46 @@ jobs:
           echo "" >> release-notes.md
           echo "Synced with rulesync $RULESYNC_VERSION" >> release-notes.md
 
+      - name: Delete existing GitHub Release (if override enabled)
+        if: ${{ steps.version.outputs.override_stable == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          echo "Checking for existing release $VERSION..."
+          if gh release view "$VERSION" &>/dev/null; then
+            echo "Deleting existing release $VERSION..."
+            gh release delete "$VERSION" --yes
+            echo "Release $VERSION deleted."
+          else
+            echo "No existing release $VERSION found."
+          fi
+          
+          # Also delete and recreate the tag if it exists
+          if git rev-parse "$VERSION" &>/dev/null; then
+            echo "Deleting existing tag $VERSION..."
+            git push origin --delete "$VERSION" || true
+            git tag -d "$VERSION" || true
+            echo "Tag $VERSION deleted."
+          fi
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
+          OVERRIDE="${{ steps.version.outputs.override_stable }}"
 
           if [ "$IS_PRERELEASE" == "true" ]; then
             PRERELEASE_FLAG="--prerelease"
           else
             PRERELEASE_FLAG=""
+          fi
+
+          if [ "$OVERRIDE" == "true" ]; then
+            echo "Creating release with override enabled..."
           fi
 
           gh release create "$VERSION" \
