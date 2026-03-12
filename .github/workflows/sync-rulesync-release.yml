@@ -181,6 +181,9 @@ jobs:
           echo "Pushing Git LFS objects..."
           git lfs push origin main --all
 
+          # Pull latest changes to avoid race conditions
+          git pull --rebase origin main
+
           # Delete tag if exists (local and remote) - for non-override mode
           if [ "${{ steps.check-sync.outputs.is_override }}" != "true" ]; then
             if git rev-parse "$VERSION" >/dev/null 2>&1; then
