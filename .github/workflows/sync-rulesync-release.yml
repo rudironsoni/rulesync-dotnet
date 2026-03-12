@@ -174,6 +174,10 @@ jobs:
           git add .gitattributes rulesync tools/rulesync Directory.Build.props .rulesync-version
           git commit -m "chore: sync with rulesync $VERSION"
 
+          # Push LFS objects first (before regular push)
+          echo "Pushing Git LFS objects..."
+          git lfs push origin main --all
+
           # Delete tag if exists (local and remote) - for non-override mode
           if [ "${{ steps.check-sync.outputs.is_override }}" != "true" ]; then
             if git rev-parse "$VERSION" >/dev/null 2>&1; then
