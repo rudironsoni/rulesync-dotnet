@@ -569,6 +569,9 @@ public class RulesyncIncrementalGenerator : IIncrementalGenerator
             case "simulateSkills":
                 return "false";
             default:
+                // Add default values for common types to avoid CS8618 warnings
+                if (csType == "string" || csType == "string?")
+                    return "string.Empty";
                 return null;
         }
     }
