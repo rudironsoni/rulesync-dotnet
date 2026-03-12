@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -31,7 +32,7 @@ public class BundledPackageFixture : IDisposable
         {
             throw new InvalidOperationException(
                 "Cannot find bundled rulesync source to build. " +
-                "Expected at: src/RuleSync.Sdk.DotNet/bundled or similar.");
+                "Expected at: rulesync/ or src/RuleSync.Sdk.DotNet/bundled/");
         }
 
         BuildBundledRulesync(buildPath);
@@ -74,31 +75,40 @@ public class BundledPackageFixture : IDisposable
 
     private static string? GetBundledSourcePath()
     {
-        // Try multiple locations where bundled source might exist
-        // CI builds from rulesync/ submodule, not from bundled/ subdirectory
-        var searchPaths = new[]
+        var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        var currentDir = Directory.GetCurrentDirectory();
+        
+        var basePaths = new List<string>();
+        
+        if (!string.IsNullOrEmpty(assemblyDir))
+        {
+            basePaths.Add(assemblyDir);
+        }
+        basePaths.Add(currentDir);
+        
+        var relativePaths = new[]
         {
             Path.Combine("..", "..", "..", "..", "rulesync"),
             Path.Combine("..", "..", "..", "rulesync"),
-            Path.Combine("..", "..", "..", "..", "src", "RuleSync.Sdk.DotNet", "bundled"),
+            Path.Combine("..", "..", "rulesync"),
+            Path.Combine("..", "rulesync"),
+            Path.Combine("rulesync"),
             Path.Combine("..", "..", "..", "..", "src", "RuleSync.Sdk.DotNet", "bundled"),
             Path.Combine("..", "..", "..", "src", "RuleSync.Sdk.DotNet", "bundled"),
-            Path.Combine("src", "RuleSync.Sdk.DotNet", "bundled"),
-            Path.Combine("rulesync")
+            Path.Combine("..", "..", "src", "RuleSync.Sdk.DotNet", "bundled"),
+            Path.Combine("src", "RuleSync.Sdk.DotNet", "bundled")
         };
 
-        var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        if (string.IsNullOrEmpty(assemblyDir))
+        foreach (var basePath in basePaths)
         {
-            return null;
-        }
-
-        foreach (var relativePath in searchPaths)
-        {
-            var fullPath = Path.GetFullPath(Path.Combine(assemblyDir, relativePath));
-            if (File.Exists(Path.Combine(fullPath, "package.json")))
+            foreach (var relativePath in relativePaths)
             {
-                return fullPath;
+                var fullPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
+                if (File.Exists(Path.Combine(fullPath, "package.json")))
+                {
+                    Console.WriteLine($"Found bundled source at: {fullPath}");
+                    return fullPath;
+                }
             }
         }
 
