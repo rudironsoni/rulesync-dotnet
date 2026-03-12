@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '0 * * * *'
   workflow_dispatch:
+    inputs:
+      override_version:
+        description: 'Force sync and override existing version (delete tag and release)'
+        required: false
+        default: ''
+        type: string
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -31,8 +37,18 @@ jobs:
       - name: Check if already synced
         id: check-sync
         run: |
+          OVERRIDE="${{ github.event.inputs.override_version }}"
           LATEST="${{ steps.get-release.outputs.latest }}"
           CURRENT=$(cat .rulesync-version 2>/dev/null || echo "")
+
+          # Handle override mode
+          if [ -n "$OVERRIDE" ]; then
+            echo "Override requested for version: $OVERRIDE"
+            echo "needs_sync=true" >> "$GITHUB_OUTPUT"
+            echo "version=$OVERRIDE" >> "$GITHUB_OUTPUT"
+            echo "is_override=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           if [ "$LATEST" = "$CURRENT" ]; then
             echo "Already synced to $LATEST"
@@ -41,6 +57,7 @@ jobs:
             echo "Needs sync: $CURRENT -> $LATEST"
             echo "needs_sync=true" >> "$GITHUB_OUTPUT"
             echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+            echo "is_override=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Download rulesync binaries
@@ -103,6 +120,32 @@ jobs:
 
           echo "Updated version to $VERSION_NUMBER"
 
+      - name: Delete existing release (if override)
+        if: steps.check-sync.outputs.needs_sync == 'true' && steps.check-sync.outputs.is_override == 'true'
+        env:
+          VERSION: ${{ steps.check-sync.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Deleting existing release and tag for $VERSION (override mode)..."
+          
+          # Delete GitHub release if exists
+          if gh release view "$VERSION" &>/dev/null; then
+            echo "Deleting release $VERSION..."
+            gh release delete "$VERSION" --yes
+          fi
+          
+          # Delete local tag if exists
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Deleting local tag $VERSION..."
+            git tag -d "$VERSION"
+          fi
+          
+          # Delete remote tag if exists
+          if git ls-remote --tags origin "$VERSION" | grep -q "$VERSION"; then
+            echo "Deleting remote tag $VERSION..."
+            git push --delete origin "$VERSION"
+          fi
+
       - name: Commit, tag and push
         if: steps.check-sync.outputs.needs_sync == 'true'
         env:
@@ -113,12 +156,14 @@ jobs:
           git add rulesync tools/rulesync Directory.Build.props .rulesync-version
           git commit -m "chore: sync with rulesync $VERSION"
 
-          # Delete tag if exists (local and remote)
-          if git rev-parse "$VERSION" >/dev/null 2>&1; then
-            git tag -d "$VERSION"
-          fi
-          if git ls-remote --tags origin "$VERSION" | grep -q "$VERSION"; then
-            git push --delete origin "$VERSION"
+          # Delete tag if exists (local and remote) - for non-override mode
+          if [ "${{ steps.check-sync.outputs.is_override }}" != "true" ]; then
+            if git rev-parse "$VERSION" >/dev/null 2>&1; then
+              git tag -d "$VERSION"
+            fi
+            if git ls-remote --tags origin "$VERSION" | grep -q "$VERSION"; then
+              git push --delete origin "$VERSION"
+            fi
           fi
 
           git tag "$VERSION"
