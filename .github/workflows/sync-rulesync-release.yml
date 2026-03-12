@@ -171,8 +171,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .gitattributes rulesync tools/rulesync Directory.Build.props .rulesync-version
-          git commit -m "chore: sync with rulesync $VERSION"
+          # Force update LFS-tracked files
+          git add -f tools/rulesync/*/rulesync* .gitattributes rulesync Directory.Build.props .rulesync-version
+          git commit -m "chore: sync with rulesync $VERSION" || echo "Commit may be empty if only LFS objects changed"
 
           # Push LFS objects first (before regular push)
           echo "Pushing Git LFS objects..."
