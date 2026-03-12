@@ -10,7 +10,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Rulesync.Sdk.DotNet.Abstractions;
+using Rulesync.Sdk.DotNet.Configuration;
 using Rulesync.Sdk.DotNet.Models;
+using Rulesync.Sdk.DotNet.Parsing;
 using Rulesync.Sdk.DotNet.Serialization;
 #if NETSTANDARD2_1
 using Rulesync.Sdk.DotNet.Polyfills;
@@ -20,25 +23,42 @@ namespace Rulesync.Sdk.DotNet;
 
 /// <summary>
 /// Client for interacting with rulesync from .NET applications.
-/// Spawns Node.js process to execute rulesync commands.
+/// Executes rulesync CLI commands and parses output.
 /// </summary>
-public sealed class RulesyncClient : IDisposable
+public sealed class RulesyncClient : IRulesyncClient
 {
     private readonly string _nativeExecutablePath;
     private readonly TimeSpan _timeout;
+    private readonly bool _parseVerboseOutput;
+    private readonly string? _workingDirectory;
     private bool _disposed;
 
     /// <summary>
     /// Creates a new RulesyncClient instance using the bundled rulesync binary.
     /// </summary>
-    public RulesyncClient()
-    {
-        _timeout = TimeSpan.FromSeconds(60);
+    public RulesyncClient() : this(new RulesyncOptions()) { }
 
-        // Always use bundled native executable
-        _nativeExecutablePath = GetNativeExecutablePath() 
-            ?? throw new InvalidOperationException(
-                "Bundled rulesync binary not found. Ensure the SDK is properly installed with bundled binaries.");
+    /// <summary>
+    /// Creates a new RulesyncClient instance with custom options.
+    /// </summary>
+    /// <param name="options">Configuration options</param>
+    public RulesyncClient(RulesyncOptions options)
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        _timeout = options.Timeout;
+        _parseVerboseOutput = options.ParseVerboseOutput;
+        _workingDirectory = options.WorkingDirectory;
+
+        // Use custom executable path if provided, otherwise use bundled
+        _nativeExecutablePath = !string.IsNullOrEmpty(options.ExecutablePath)
+            ? options.ExecutablePath
+            : GetNativeExecutablePath() 
+                ?? throw new InvalidOperationException(
+                    "Bundled rulesync binary not found. Ensure the SDK is properly installed with bundled binaries.");
     }
 
     /// <summary>
@@ -74,7 +94,14 @@ public sealed class RulesyncClient : IDisposable
                     $"Rulesync generate failed with exit code {result.ExitCode}: {result.Stderr}");
             }
 
-            // Return simple success - native binary doesn't output JSON
+            // Parse output for structured results if verbose parsing is enabled
+            if (_parseVerboseOutput && !string.IsNullOrWhiteSpace(result.Stdout))
+            {
+                var parsedResult = GenerateOutputParser.Parse(result.Stdout);
+                return Result<GenerateResult>.Success(parsedResult);
+            }
+
+            // Return simple success if parsing disabled or no output
             return Result<GenerateResult>.Success(new GenerateResult());
         }
         catch (Exception ex)
