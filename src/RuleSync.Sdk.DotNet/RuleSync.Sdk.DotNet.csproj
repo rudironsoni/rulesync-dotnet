@@ -46,6 +46,10 @@
     <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/types/tool-targets.ts" />
     <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/lib/generate.ts" />
     <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/lib/import.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/lib/init.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/cli/commands/install.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/cli/commands/update.ts" />
+    <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/cli/commands/fetch.ts" />
     <AdditionalFiles Include="$(RulesyncSubmodulePath)/src/index.ts" />
   </ItemGroup>
 

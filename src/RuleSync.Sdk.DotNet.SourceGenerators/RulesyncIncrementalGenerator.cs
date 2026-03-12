@@ -35,6 +35,21 @@ public class RulesyncIncrementalGenerator : IIncrementalGenerator
         @"(\w+)(\??):\s*([^;\n]+);?",
         RegexOptions.Compiled | RegexOptions.Multiline);
 
+    // Matches: export const SchemaName = z.looseObject({...}) or z.object({...})
+    private static readonly Regex ZodSchemaRegex = new(
+        @"export\s+const\s+(\w+)Schema\s*=\s*z\.(?:looseObject|object)\s*\(\{([^}]*)\}",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+
+    // Matches: export type TypeName = z.infer<typeof SchemaNameSchema>;
+    private static readonly Regex ZodInferRegex = new(
+        @"export\s+type\s+(\w+)\s*=\s*z\.infer<typeof\s+(\w+)Schema>\s*;",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+
+    // Matches schema properties like: name: z.string(), name: z.optional(z.string()), etc.
+    private static readonly Regex ZodPropertyRegex = new(
+        @"(\w+):\s*z\.(optional\()?\s*z\.(\w+)(?:\(([^)]*)\))?\)?",
+        RegexOptions.Compiled | RegexOptions.Multiline);
+
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -82,6 +97,7 @@ public class RulesyncIncrementalGenerator : IIncrementalGenerator
             ParseConstArrays(content, enums);
             ParseUnionTypes(content, enums);
             ParseObjectTypes(content, records);
+            ParseZodSchemas(content, records);
         }
 
         // Track already-added hint names to avoid duplicates
@@ -225,6 +241,114 @@ public class RulesyncIncrementalGenerator : IIncrementalGenerator
                 enums[name] = new EnumDefinition(name, enumValues);
             }
         }
+    }
+
+    private static void ParseZodSchemas(string content, Dictionary<string, RecordDefinition> records)
+    {
+        // First, find all schema definitions
+        var schemas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (Match match in ZodSchemaRegex.Matches(content))
+        {
+            var schemaName = match.Groups[1].Value;  // e.g., "FetchOptions"
+            var propertiesBody = match.Groups[2].Value;
+            schemas[schemaName] = propertiesBody;
+        }
+
+        // Then, find all type inferences and create record definitions
+        foreach (Match match in ZodInferRegex.Matches(content))
+        {
+            var typeName = match.Groups[1].Value;  // e.g., "FetchOptions"
+            var schemaName = match.Groups[2].Value;  // e.g., "FetchOptions" (without Schema suffix)
+
+            // Skip if already added
+            if (records.ContainsKey(typeName))
+                continue;
+
+            // Find the schema body
+            if (!schemas.TryGetValue(schemaName, out var propertiesBody))
+                continue;
+
+            var properties = ParseZodProperties(propertiesBody);
+            if (properties.Count > 0)
+            {
+                records[typeName] = new RecordDefinition(typeName, properties.ToImmutableArray());
+            }
+        }
+    }
+
+    private static List<PropertyDefinition> ParseZodProperties(string propertiesBody)
+    {
+        var properties = new List<PropertyDefinition>();
+        
+        // Simple property parsing for zod schemas
+        // Matches patterns like: propertyName: z.string(), propertyName: z.optional(z.number()), etc.
+        var lines = propertiesBody.Split(new[] { '\n', ',' }, StringSplitOptions.RemoveEmptyEntries);
+        
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+                continue;
+
+            // Try to match property definitions
+            // Pattern: name: z.type() or name: z.optional(z.type())
+            var colonIndex = trimmed.IndexOf(':');
+            if (colonIndex < 0)
+                continue;
+
+            var propName = trimmed.Substring(0, colonIndex).Trim();
+            var rest = trimmed.Substring(colonIndex + 1).Trim();
+
+            // Check if optional
+            var isOptional = rest.Contains("z.optional");
+            
+            // Extract the type
+            string zodType;
+            if (rest.Contains("z.string"))
+                zodType = "string";
+            else if (rest.Contains("z.number"))
+                zodType = "number";
+            else if (rest.Contains("z.boolean"))
+                zodType = "boolean";
+            else if (rest.Contains("z.array"))
+                zodType = "array";
+            else if (rest.Contains("z.enum"))
+                zodType = "string"; // Enums become strings for now
+            else
+                continue; // Skip unknown types
+
+            // Handle array types
+            if (zodType == "array")
+            {
+                // Try to extract element type from z.array(z.something())
+                var arrayMatch = System.Text.RegularExpressions.Regex.Match(rest, @"z\.array\s*\(\s*z\.(\w+)");
+                if (arrayMatch.Success)
+                {
+                    var elementType = arrayMatch.Groups[1].Value;
+                    if (elementType == "string")
+                        zodType = "string[]";
+                    else
+                        zodType = "string[]"; // Default to string array
+                }
+                else
+                {
+                    zodType = "string[]";
+                }
+            }
+
+            var csType = MapToCSharpType(zodType, isOptional);
+            var defaultValue = GetDefaultValue(propName, csType);
+
+            properties.Add(new PropertyDefinition(
+                propName,
+                ToPascalCase(propName),
+                zodType,
+                csType,
+                isOptional,
+                defaultValue));
+        }
+
+        return properties;
     }
 
     private static void ParseObjectTypes(string content, Dictionary<string, RecordDefinition> records)

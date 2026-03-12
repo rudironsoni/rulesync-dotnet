@@ -73,4 +73,129 @@ internal static class RulesyncJsonContext
             return null;
         }
     }
+
+    /// <summary>
+    /// Deserializes an InitResult from JSON.
+    /// Returns null if the JSON is invalid, whitespace-only, or cannot be parsed.
+    /// </summary>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    internal static InitResult? DeserializeInitResult(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<InitResult>(json, s_options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Deserializes a GitignoreResult from JSON.
+    /// Returns null if the JSON is invalid, whitespace-only, or cannot be parsed.
+    /// </summary>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    internal static GitignoreResult? DeserializeGitignoreResult(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<GitignoreResult>(json, s_options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Deserializes a FetchSummary from JSON.
+    /// Returns null if the JSON is invalid, whitespace-only, or cannot be parsed.
+    /// </summary>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    internal static FetchSummary? DeserializeFetchSummary(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<FetchSummary>(json, s_options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Deserializes an InstallResult from JSON.
+    /// Returns null if the JSON is invalid, whitespace-only, or cannot be parsed.
+    /// </summary>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    internal static InstallResult? DeserializeInstallResult(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<InstallResult>(json, s_options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Deserializes an UpdateResult from JSON.
+    /// Returns null if the JSON is invalid, whitespace-only, or cannot be parsed.
+    /// </summary>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    internal static UpdateResult? DeserializeUpdateResult(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<UpdateResult>(json, s_options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 }

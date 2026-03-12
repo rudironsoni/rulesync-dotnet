@@ -169,6 +169,261 @@ public sealed class RulesyncClient : IDisposable
     }
 
     /// <summary>
+    /// Initializes a new rulesync project by creating the .rulesync/ directory and sample files.
+    /// </summary>
+    /// <param name="options">Initialization options</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the init operation</returns>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    public async ValueTask<Result<InitResult>> InitAsync(
+        InitOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        var opts = options ?? new InitOptions();
+        var args = BuildInitArgs(opts);
+
+        try
+        {
+            var result = await ExecuteRulesyncAsync(args, cancellationToken).ConfigureAwait(false);
+
+            if (result.ExitCode != 0)
+            {
+                return Result<InitResult>.Failure(
+                    "INIT_FAILED",
+                    $"Rulesync init failed with exit code {result.ExitCode}: {result.Stderr}");
+            }
+
+            var initResult = RulesyncJsonContext.DeserializeInitResult(result.Stdout);
+            if (initResult == null)
+            {
+                return Result<InitResult>.Failure(
+                    "DESERIALIZATION_FAILED",
+                    "Failed to deserialize init result.");
+            }
+
+            return Result<InitResult>.Success(initResult);
+        }
+        catch (Exception ex)
+        {
+            return Result<InitResult>.Failure(
+                "EXCEPTION",
+                $"An error occurred during init: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Manages .gitignore entries for rulesync files.
+    /// </summary>
+    /// <param name="options">Gitignore options</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the gitignore operation</returns>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    public async ValueTask<Result<GitignoreResult>> GitignoreAsync(
+        GitignoreOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        var opts = options ?? new GitignoreOptions();
+        var args = BuildGitignoreArgs(opts);
+
+        try
+        {
+            var result = await ExecuteRulesyncAsync(args, cancellationToken).ConfigureAwait(false);
+
+            if (result.ExitCode != 0)
+            {
+                return Result<GitignoreResult>.Failure(
+                    "GITIGNORE_FAILED",
+                    $"Rulesync gitignore failed with exit code {result.ExitCode}: {result.Stderr}");
+            }
+
+            var gitignoreResult = RulesyncJsonContext.DeserializeGitignoreResult(result.Stdout);
+            if (gitignoreResult == null)
+            {
+                return Result<GitignoreResult>.Failure(
+                    "DESERIALIZATION_FAILED",
+                    "Failed to deserialize gitignore result.");
+            }
+
+            return Result<GitignoreResult>.Success(gitignoreResult);
+        }
+        catch (Exception ex)
+        {
+            return Result<GitignoreResult>.Failure(
+                "EXCEPTION",
+                $"An error occurred during gitignore: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Fetches remote configuration files from GitHub repositories.
+    /// </summary>
+    /// <param name="options">Fetch options (source is required)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the fetch operation</returns>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    public async ValueTask<Result<FetchSummary>> FetchAsync(
+        FetchOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        // Validate Source is provided
+        if (string.IsNullOrWhiteSpace(options.Source))
+        {
+            throw new ArgumentException("Source is required.", nameof(options));
+        }
+
+        var args = BuildFetchArgs(options);
+
+        try
+        {
+            var result = await ExecuteRulesyncAsync(args, cancellationToken).ConfigureAwait(false);
+
+            if (result.ExitCode != 0)
+            {
+                return Result<FetchSummary>.Failure(
+                    "FETCH_FAILED",
+                    $"Rulesync fetch failed with exit code {result.ExitCode}: {result.Stderr}");
+            }
+
+            var fetchSummary = RulesyncJsonContext.DeserializeFetchSummary(result.Stdout);
+            if (fetchSummary == null)
+            {
+                return Result<FetchSummary>.Failure(
+                    "DESERIALIZATION_FAILED",
+                    "Failed to deserialize fetch result.");
+            }
+
+            return Result<FetchSummary>.Success(fetchSummary);
+        }
+        catch (Exception ex)
+        {
+            return Result<FetchSummary>.Failure(
+                "EXCEPTION",
+                $"An error occurred during fetch: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Installs skills from declarative sources defined in rulesync.jsonc.
+    /// </summary>
+    /// <param name="options">Install options</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the install operation</returns>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    public async ValueTask<Result<InstallResult>> InstallAsync(
+        InstallOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        var opts = options ?? new InstallOptions();
+        var args = BuildInstallArgs(opts);
+
+        try
+        {
+            var result = await ExecuteRulesyncAsync(args, cancellationToken).ConfigureAwait(false);
+
+            if (result.ExitCode != 0)
+            {
+                return Result<InstallResult>.Failure(
+                    "INSTALL_FAILED",
+                    $"Rulesync install failed with exit code {result.ExitCode}: {result.Stderr}");
+            }
+
+            var installResult = RulesyncJsonContext.DeserializeInstallResult(result.Stdout);
+            if (installResult == null)
+            {
+                return Result<InstallResult>.Failure(
+                    "DESERIALIZATION_FAILED",
+                    "Failed to deserialize install result.");
+            }
+
+            return Result<InstallResult>.Success(installResult);
+        }
+        catch (Exception ex)
+        {
+            return Result<InstallResult>.Failure(
+                "EXCEPTION",
+                $"An error occurred during install: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Updates the rulesync CLI to the latest version.
+    /// </summary>
+    /// <param name="options">Update options</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the update operation</returns>
+#if NET6_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization uses reflection which may require unreferenced code")]
+#endif
+#if NET7_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization uses reflection which requires dynamic code")]
+#endif
+    public async ValueTask<Result<UpdateResult>> UpdateAsync(
+        UpdateOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        var opts = options ?? new UpdateOptions();
+        var args = BuildUpdateArgs(opts);
+
+        try
+        {
+            var result = await ExecuteRulesyncAsync(args, cancellationToken).ConfigureAwait(false);
+
+            if (result.ExitCode != 0)
+            {
+                return Result<UpdateResult>.Failure(
+                    "UPDATE_FAILED",
+                    $"Rulesync update failed with exit code {result.ExitCode}: {result.Stderr}");
+            }
+
+            var updateResult = RulesyncJsonContext.DeserializeUpdateResult(result.Stdout);
+            if (updateResult == null)
+            {
+                return Result<UpdateResult>.Failure(
+                    "DESERIALIZATION_FAILED",
+                    "Failed to deserialize update result.");
+            }
+
+            return Result<UpdateResult>.Success(updateResult);
+        }
+        catch (Exception ex)
+        {
+            return Result<UpdateResult>.Failure(
+                "EXCEPTION",
+                $"An error occurred during update: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Disposes the client.
     /// </summary>
     public void Dispose()
@@ -297,6 +552,166 @@ public sealed class RulesyncClient : IDisposable
         // Add JSON output flag
         args.Add("--json");
 
+        return args.ToArray();
+    }
+
+    private static string[] BuildInitArgs(InitOptions options)
+    {
+        var args = new List<string> { "init" };
+
+        if (!string.IsNullOrEmpty(options.ConfigPath))
+        {
+            args.Add("--config");
+            args.Add(ValidateConfigPath(options.ConfigPath));
+        }
+
+        if (options.Verbose)
+        {
+            args.Add("--verbose");
+        }
+
+        if (options.Silent)
+        {
+            args.Add("--silent");
+        }
+
+        args.Add("--json");
+        return args.ToArray();
+    }
+
+    private static string[] BuildGitignoreArgs(GitignoreOptions options)
+    {
+        var args = new List<string> { "gitignore" };
+
+        if (!string.IsNullOrEmpty(options.ConfigPath))
+        {
+            args.Add("--config");
+            args.Add(ValidateConfigPath(options.ConfigPath));
+        }
+
+        if (options.Verbose)
+        {
+            args.Add("--verbose");
+        }
+
+        if (options.Silent)
+        {
+            args.Add("--silent");
+        }
+
+        args.Add("--json");
+        return args.ToArray();
+    }
+
+    private static string[] BuildFetchArgs(FetchOptions options)
+    {
+        var args = new List<string> { "fetch" };
+
+        // Source is required
+        args.Add(options.Source!);
+
+        if (!string.IsNullOrEmpty(options.Path))
+        {
+            args.Add("--path");
+            args.Add(options.Path);
+        }
+
+        if (options.Force)
+        {
+            args.Add("--force");
+        }
+
+        if (!string.IsNullOrEmpty(options.Token))
+        {
+            args.Add("--token");
+            args.Add(options.Token);
+        }
+
+        if (options.Verbose)
+        {
+            args.Add("--verbose");
+        }
+
+        if (options.Silent)
+        {
+            args.Add("--silent");
+        }
+
+        args.Add("--json");
+        return args.ToArray();
+    }
+
+    private static string[] BuildInstallArgs(InstallOptions options)
+    {
+        var args = new List<string> { "install" };
+
+        if (options.Update)
+        {
+            args.Add("--update");
+        }
+
+        if (options.Frozen)
+        {
+            args.Add("--frozen");
+        }
+
+        if (!string.IsNullOrEmpty(options.Token))
+        {
+            args.Add("--token");
+            args.Add(options.Token);
+        }
+
+        if (!string.IsNullOrEmpty(options.ConfigPath))
+        {
+            args.Add("--config");
+            args.Add(ValidateConfigPath(options.ConfigPath));
+        }
+
+        if (options.Verbose)
+        {
+            args.Add("--verbose");
+        }
+
+        if (options.Silent)
+        {
+            args.Add("--silent");
+        }
+
+        args.Add("--json");
+        return args.ToArray();
+    }
+
+    private static string[] BuildUpdateArgs(UpdateOptions options)
+    {
+        var args = new List<string> { "update" };
+
+        if (options.Check)
+        {
+            args.Add("--check");
+        }
+
+        if (options.Force)
+        {
+            args.Add("--force");
+        }
+
+        if (!string.IsNullOrEmpty(options.Token))
+        {
+            args.Add("--token");
+            args.Add(options.Token);
+        }
+
+        if (options.Verbose)
+        {
+            args.Add("--verbose");
+        }
+
+        if (options.Silent)
+        {
+            args.Add("--silent");
+        }
+
+        args.Add("--json");
         return args.ToArray();
     }
 

@@ -166,6 +166,31 @@ public sealed class RulesyncClient : IDisposable
     public ValueTask<Result<ImportResult>> ImportAsync(
         ImportOptions options,
         CancellationToken cancellationToken = default);
+
+    // Initialize a new rulesync project
+    public ValueTask<Result<InitResult>> InitAsync(
+        InitOptions? options = null,
+        CancellationToken cancellationToken = default);
+
+    // Manage .gitignore entries for AI tool configs
+    public ValueTask<Result<GitignoreResult>> GitignoreAsync(
+        GitignoreOptions? options = null,
+        CancellationToken cancellationToken = default);
+
+    // Fetch remote configurations from GitHub
+    public ValueTask<Result<FetchSummary>> FetchAsync(
+        FetchOptions options,
+        CancellationToken cancellationToken = default);
+
+    // Install skills from declarative sources
+    public ValueTask<Result<InstallResult>> InstallAsync(
+        InstallOptions? options = null,
+        CancellationToken cancellationToken = default);
+
+    // Update rulesync CLI to latest version
+    public ValueTask<Result<UpdateResult>> UpdateAsync(
+        UpdateOptions? options = null,
+        CancellationToken cancellationToken = default);
 }
 ```
 
@@ -229,6 +254,104 @@ public sealed class ImportOptions
 }
 ```
 
+**InitOptions** (from `rulesync/src/cli/commands/init.ts`):
+
+```csharp
+public sealed class InitOptions
+{
+    public string ConfigPath { get; set; }  // Path to rulesync.jsonc
+    public bool Verbose { get; set; }
+    public bool Silent { get; set; }
+}
+
+public sealed class InitResult
+{
+    public InitFileResult ConfigFile { get; init; }
+    public List<InitFileResult> SampleFiles { get; init; }
+}
+```
+
+**GitignoreOptions** (from `rulesync/src/cli/commands/gitignore.ts`):
+
+```csharp
+public sealed class GitignoreOptions
+{
+    public string ConfigPath { get; set; }
+    public bool Verbose { get; set; }
+    public bool Silent { get; set; }
+}
+
+public sealed class GitignoreResult
+{
+    public int EntriesAdded { get; init; }
+}
+```
+
+**FetchOptions** (from `rulesync/src/cli/commands/fetch.ts`):
+
+```csharp
+public sealed class FetchOptions
+{
+    public string Source { get; set; }      // Required: github:owner/repo/path
+    public string Path { get; set; }        // Local destination path
+    public bool Force { get; set; }        // Overwrite existing files
+    public string Token { get; set; }      // GitHub token
+    public bool Verbose { get; set; }
+    public bool Silent { get; set; }
+}
+
+public sealed class FetchFileResult
+{
+    public string RelativePath { get; init; }
+    public string Status { get; init; }     // "created", "updated", "unchanged", etc.
+}
+
+public sealed class FetchSummary
+{
+    public List<FetchFileResult> Files { get; init; }
+}
+```
+
+**InstallOptions** (from `rulesync/src/cli/commands/install.ts`):
+
+```csharp
+public sealed class InstallOptions
+{
+    public bool Update { get; set; }       // Update existing skills
+    public bool Frozen { get; set; }       // Fail if lock file out of sync
+    public string Token { get; set; }      // GitHub token
+    public string ConfigPath { get; set; }
+    public bool Verbose { get; set; }
+    public bool Silent { get; set; }
+}
+
+public sealed class InstallResult
+{
+    public int Installed { get; init; }
+    public int Updated { get; init; }
+}
+```
+
+**UpdateOptions** (from `rulesync/src/cli/commands/update.ts`):
+
+```csharp
+public sealed class UpdateOptions
+{
+    public bool Check { get; set; }        // Only check, don't install
+    public bool Force { get; set; }        // Force update
+    public string Token { get; set; }      // GitHub token
+    public bool Verbose { get; set; }
+    public bool Silent { get; set; }
+}
+
+public sealed class UpdateResult
+{
+    public bool Available { get; init; }
+    public string CurrentVersion { get; init; }
+    public string LatestVersion { get; init; }
+}
+```
+
 ## Examples
 
 ### Generate all features for all tools
@@ -259,6 +382,88 @@ var result = await client.ImportAsync(new ImportOptions
 if (result.IsSuccess)
 {
     Console.WriteLine("Import successful");
+}
+```
+
+### Initialize a new project
+
+```csharp
+var result = await client.InitAsync();
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"Created config: {result.Value.ConfigFile.Path}");
+    foreach (var file in result.Value.SampleFiles)
+    {
+        Console.WriteLine($"  - {file.Path}");
+    }
+}
+```
+
+### Manage .gitignore entries
+
+```csharp
+var result = await client.GitignoreAsync();
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"Added {result.Value.EntriesAdded} entries to .gitignore");
+}
+```
+
+### Fetch remote configurations
+
+```csharp
+var result = await client.FetchAsync(new FetchOptions
+{
+    Source = "github:owner/repo/main/.cursor/rules",
+    Path = "./fetched-configs",
+    Force = true  // Overwrite existing files
+});
+
+if (result.IsSuccess)
+{
+    foreach (var file in result.Value.Files)
+    {
+        Console.WriteLine($"{file.RelativePath}: {file.Status}");
+    }
+}
+```
+
+### Install skills
+
+```csharp
+var result = await client.InstallAsync(new InstallOptions
+{
+    Update = true,  // Update existing skills
+    Frozen = false  // Allow lock file updates
+});
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"Installed: {result.Value.Installed}, Updated: {result.Value.Updated}");
+}
+```
+
+### Update CLI
+
+```csharp
+// Check for updates without installing
+var result = await client.UpdateAsync(new UpdateOptions
+{
+    Check = true
+});
+
+if (result.IsSuccess)
+{
+    if (result.Value.Available)
+    {
+        Console.WriteLine($"Update available: {result.Value.CurrentVersion} -> {result.Value.LatestVersion}");
+    }
+    else
+    {
+        Console.WriteLine("Already up to date");
+    }
 }
 ```
 
@@ -301,10 +506,20 @@ The SDK uses an **incremental source generator** that parses rulesync's TypeScri
    - `rulesync/src/types/tool-targets.ts` → `ToolTarget` enum
    - `rulesync/src/lib/generate.ts` → `GenerateOptions`, `GenerateResult`
    - `rulesync/src/lib/import.ts` → `ImportOptions`, `ImportResult`
+   - `rulesync/src/lib/init.ts` → `InitFileResult`
+   - `rulesync/src/cli/commands/install.ts` → `InstallCommandOptions`
+   - `rulesync/src/cli/commands/update.ts` → `UpdateCommandOptions`
 
-2. **Compile-time generation**: Types are generated during build, not runtime
+2. **Manual types**: CLI-specific types not in TypeScript are defined manually:
+   - `InitOptions`, `InitResult`
+   - `GitignoreOptions`, `GitignoreResult`
+   - `FetchOptions`, `FetchFileResult`, `FetchSummary`
+   - `InstallOptions`, `InstallResult`
+   - `UpdateOptions`, `UpdateResult`
 
-3. **IDE support**: Full IntelliSense and autocomplete for all generated types
+3. **Compile-time generation**: Types are generated during build, not runtime
+
+4. **IDE support**: Full IntelliSense and autocomplete for all generated types
 
 ## Repository Structure
 
@@ -356,6 +571,11 @@ RulesyncClient
     +-- Spawns Node.js process
     |       +-- npx rulesync generate ...
     |       +-- npx rulesync import ...
+    |       +-- npx rulesync init ...
+    |       +-- npx rulesync gitignore ...
+    |       +-- npx rulesync fetch ...
+    |       +-- npx rulesync install ...
+    |       +-- npx rulesync update ...
     |
     +-- JSON output parsing
     |       +-- System.Text.Json
@@ -369,12 +589,19 @@ Source Generator
     |       +-- rulesync/src/types/tool-targets.ts
     |       +-- rulesync/src/lib/generate.ts
     |       +-- rulesync/src/lib/import.ts
+    |       +-- rulesync/src/lib/init.ts
+    |       +-- rulesync/src/cli/commands/install.ts
+    |       +-- rulesync/src/cli/commands/update.ts
+    |       +-- rulesync/src/cli/commands/fetch.ts
     |
     +-- Generates C# types
             +-- Feature enum
             +-- ToolTarget enum
             +-- GenerateOptions class
+            +-- GenerateResult class
             +-- ImportOptions class
+            +-- ImportResult class
+            +-- InitFileResult class
 ```
 
 ## License
