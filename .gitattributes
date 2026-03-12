@@ -1,0 +1,1 @@
+tools/rulesync/**/rulesync* filter=lfs diff=lfs merge=lfs -text
