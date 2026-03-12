@@ -9,8 +9,8 @@ using Xunit;
 namespace Rulesync.Sdk.DotNet.Tests;
 
 /// <summary>
-/// Shared fixture for tests that use the committed rulesync binaries.
-/// Binaries are downloaded by sync workflow and committed to tools/rulesync/.
+/// Shared fixture for tests that use the bundled rulesync binaries.
+/// Binaries are included in the SDK via MSBuild and copied to output.
 /// </summary>
 public class BundledPackageFixture
 {
@@ -24,30 +24,23 @@ public class BundledPackageFixture
         var platform = GetPlatformIdentifier();
         var binaryName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
         
-        // Search for the binary in committed tools/rulesync/{platform}/
-        var searchPaths = new[]
+        // SDK copies binaries to output directory during build
+        var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        if (string.IsNullOrEmpty(assemblyDir))
         {
-            // From test assembly location
-            GetAbsolutePath("tools", "rulesync", platform, binaryName),
-            GetAbsolutePath("..", "..", "tools", "rulesync", platform, binaryName),
-            GetAbsolutePath("..", "..", "..", "tools", "rulesync", platform, binaryName),
-            // From current directory
-            Path.GetFullPath(Path.Combine("tools", "rulesync", platform, binaryName))
-        };
-
-        foreach (var path in searchPaths)
-        {
-            if (File.Exists(path))
-            {
-                BundledPath = path;
-                return;
-            }
+            throw new InvalidOperationException("Cannot determine assembly directory");
         }
-
-        throw new InvalidOperationException(
-            $"Rulesync binary not found for {platform}. " +
-            $"Expected at: tools/rulesync/{platform}/{binaryName}. " +
-            "Run sync workflow to download binaries or ensure submodules are built.");
+        
+        var bundledPath = Path.Combine(assemblyDir, "tools", "rulesync", platform, binaryName);
+        
+        if (!File.Exists(bundledPath))
+        {
+            throw new InvalidOperationException(
+                $"Rulesync binary not found at: {bundledPath}. " +
+                "Ensure SDK project includes binaries and builds successfully.");
+        }
+        
+        BundledPath = bundledPath;
     }
 
     private static string GetPlatformIdentifier()
@@ -75,13 +68,4 @@ public class BundledPackageFixture
             $"Platform not supported: {RuntimeInformation.OSDescription}");
     }
 
-    private static string GetAbsolutePath(params string[] parts)
-    {
-        var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        if (string.IsNullOrEmpty(assemblyDir))
-        {
-            return Path.GetFullPath(Path.Combine(parts));
-        }
-        return Path.GetFullPath(Path.Combine(assemblyDir, Path.Combine(parts)));
-    }
 }

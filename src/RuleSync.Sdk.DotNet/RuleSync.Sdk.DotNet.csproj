@@ -66,15 +66,23 @@
     <Exec WorkingDirectory="$(RulesyncSubmodulePath)" Command="pnpm run build" />
   </Target>
 
-  <!-- Include bundled rulesync (JS version) in NuGet package -->
-  <ItemGroup>
-    <None Include="$(RulesyncSubmodulePath)/dist/**/*" Pack="true" PackagePath="tools/rulesync/dist/" />
-    <None Include="$(RulesyncSubmodulePath)/package.json" Pack="true" PackagePath="tools/rulesync/" />
-  </ItemGroup>
-
-  <!-- Include native executables if they exist (optional, built separately) -->
-  <!-- Set IncludeNativeExecutables=false to build slim package without native binaries -->
-  <ItemGroup Condition="'$(IncludeNativeExecutables)' != 'false'">
-    <None Include="$(MSBuildThisFileDirectory)../../native-binaries/**/*" Pack="true" PackagePath="tools/rulesync-native/" Condition="Exists('$(MSBuildThisFileDirectory)../../native-binaries')" />
+  <!-- Include committed rulesync binaries from tools/rulesync/ (downloaded by sync workflow) -->
+  <PropertyGroup>
+    <BundledRulesyncPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)../../tools/rulesync'))</BundledRulesyncPath>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="Exists('$(BundledRulesyncPath)/linux-x64/rulesync')">
+    <!-- Include all platform binaries in NuGet package -->
+    <None Include="$(BundledRulesyncPath)/linux-x64/rulesync" Pack="true" PackagePath="tools/rulesync/linux-x64/" />
+    <None Include="$(BundledRulesyncPath)/linux-arm64/rulesync" Pack="true" PackagePath="tools/rulesync/linux-arm64/" />
+    <None Include="$(BundledRulesyncPath)/darwin-x64/rulesync" Pack="true" PackagePath="tools/rulesync/darwin-x64/" />
+    <None Include="$(BundledRulesyncPath)/darwin-arm64/rulesync" Pack="true" PackagePath="tools/rulesync/darwin-arm64/" />
+    <None Include="$(BundledRulesyncPath)/windows-x64/rulesync.exe" Pack="true" PackagePath="tools/rulesync/windows-x64/" />
+    <!-- Copy to build output for tests -->
+    <Content Include="$(BundledRulesyncPath)/linux-x64/rulesync" CopyToOutputDirectory="PreserveNewest" TargetPath="tools/rulesync/linux-x64/rulesync" />
+    <Content Include="$(BundledRulesyncPath)/linux-arm64/rulesync" CopyToOutputDirectory="PreserveNewest" TargetPath="tools/rulesync/linux-arm64/rulesync" />
+    <Content Include="$(BundledRulesyncPath)/darwin-x64/rulesync" CopyToOutputDirectory="PreserveNewest" TargetPath="tools/rulesync/darwin-x64/rulesync" />
+    <Content Include="$(BundledRulesyncPath)/darwin-arm64/rulesync" CopyToOutputDirectory="PreserveNewest" TargetPath="tools/rulesync/darwin-arm64/rulesync" />
+    <Content Include="$(BundledRulesyncPath)/windows-x64/rulesync.exe" CopyToOutputDirectory="PreserveNewest" TargetPath="tools/rulesync/windows-x64/rulesync.exe" />
   </ItemGroup>
 </Project>
