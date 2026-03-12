@@ -1,197 +1,85 @@
 #nullable enable
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace Rulesync.Sdk.DotNet.Tests;
 
 /// <summary>
-/// Shared fixture for tests that require the bundled rulesync package.
-/// Builds from rulesync/ submodule at repo root - deterministic location.
+/// Shared fixture for tests that use the committed rulesync binaries.
+/// Binaries are downloaded by sync workflow and committed to tools/rulesync/.
 /// </summary>
-public class BundledPackageFixture : IDisposable
+public class BundledPackageFixture
 {
     /// <summary>
-    /// Path to the built bundled rulesync (tools/rulesync/ relative to assembly)
+    /// Path to the rulesync binary for the current platform
     /// </summary>
     public string BundledPath { get; }
 
     public BundledPackageFixture()
     {
-        // Deterministic output path: tools/rulesync/ next to test assembly
-        var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-            ?? throw new InvalidOperationException("Cannot determine assembly directory");
+        var platform = GetPlatformIdentifier();
+        var binaryName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
         
-        BundledPath = Path.GetFullPath(Path.Combine(assemblyDir, "tools", "rulesync"));
-        
-        // Check if already built
-        if (Directory.Exists(BundledPath) && 
-            File.Exists(Path.Combine(BundledPath, "dist", "cli", "index.js")))
+        // Search for the binary in committed tools/rulesync/{platform}/
+        var searchPaths = new[]
         {
-            return; // Already built
-        }
-        
-        // Find rulesync source at repo root
-        var sourcePath = FindRulesyncSource();
-        if (sourcePath == null)
+            // From test assembly location
+            GetAbsolutePath("tools", "rulesync", platform, binaryName),
+            GetAbsolutePath("..", "..", "tools", "rulesync", platform, binaryName),
+            GetAbsolutePath("..", "..", "..", "tools", "rulesync", platform, binaryName),
+            // From current directory
+            Path.GetFullPath(Path.Combine("tools", "rulesync", platform, binaryName))
+        };
+
+        foreach (var path in searchPaths)
         {
-            throw new InvalidOperationException(
-                "Cannot find rulesync/ submodule. Ensure submodules are initialized: git submodule update --init");
+            if (File.Exists(path))
+            {
+                BundledPath = path;
+                return;
+            }
         }
-        
-        // Build to deterministic location
-        BuildBundledRulesync(sourcePath, BundledPath);
-        
-        // Verify build succeeded
-        if (!File.Exists(Path.Combine(BundledPath, "dist", "cli", "index.js")))
-        {
-            throw new InvalidOperationException(
-                $"Bundled rulesync build failed. Expected dist/cli/index.js not found at: {BundledPath}");
-        }
+
+        throw new InvalidOperationException(
+            $"Rulesync binary not found for {platform}. " +
+            $"Expected at: tools/rulesync/{platform}/{binaryName}. " +
+            "Run sync workflow to download binaries or ensure submodules are built.");
     }
-    
-    /// <summary>
-    /// Find rulesync/ submodule by walking up from assembly location
-    /// </summary>
-    private static string? FindRulesyncSource()
+
+    private static string GetPlatformIdentifier()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return "win-x64";
+        }
+        
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 
+                ? "osx-arm64" 
+                : "osx-x64";
+        }
+        
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return "linux-x64";
+        }
+        
+        throw new PlatformNotSupportedException(
+            $"Platform not supported: {RuntimeInformation.OSDescription}");
+    }
+
+    private static string GetAbsolutePath(params string[] parts)
     {
         var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         if (string.IsNullOrEmpty(assemblyDir))
         {
-            return null;
+            return Path.GetFullPath(Path.Combine(parts));
         }
-        
-        // Walk up directory tree looking for rulesync/package.json
-        var dir = new DirectoryInfo(assemblyDir);
-        while (dir != null)
-        {
-            var rulesyncPath = Path.Combine(dir.FullName, "rulesync");
-            if (File.Exists(Path.Combine(rulesyncPath, "package.json")))
-            {
-                return rulesyncPath;
-            }
-            
-            // Also check one level down (CI might have different structure)
-            var nestedRulesync = Path.Combine(dir.FullName, "..", "rulesync");
-            var nestedFullPath = Path.GetFullPath(nestedRulesync);
-            if (File.Exists(Path.Combine(nestedFullPath, "package.json")))
-            {
-                return nestedFullPath;
-            }
-            
-            dir = dir.Parent;
-        }
-        
-        return null;
-    }
-
-    private static void BuildBundledRulesync(string sourcePath, string outputPath)
-    {
-        Console.WriteLine($"Building rulesync from {sourcePath} to {outputPath}");
-        
-        // Detect package manager
-        var (cmd, installArgs, buildCmd) = DetectPackageManager(sourcePath);
-        
-        // Install dependencies
-        RunCommand(cmd, installArgs, sourcePath, "install dependencies");
-        
-        // Build
-        RunCommand(cmd, buildCmd, sourcePath, "build");
-        
-        // Copy built files to deterministic location
-        var builtDistPath = Path.Combine(sourcePath, "dist");
-        if (!Directory.Exists(builtDistPath))
-        {
-            throw new InvalidOperationException(
-                $"Build did not produce dist/ directory at: {sourcePath}");
-        }
-        
-        // Ensure output directory exists
-        Directory.CreateDirectory(outputPath);
-        
-        // Copy dist folder
-        CopyDirectory(builtDistPath, Path.Combine(outputPath, "dist"));
-        
-        // Copy package.json for reference
-        File.Copy(
-            Path.Combine(sourcePath, "package.json"), 
-            Path.Combine(outputPath, "package.json"), 
-            overwrite: true);
-        
-        Console.WriteLine($"Rulesync bundled to: {outputPath}");
-    }
-
-    private static (string cmd, string installArgs, string buildCmd) DetectPackageManager(string sourcePath)
-    {
-        if (File.Exists(Path.Combine(sourcePath, "pnpm-lock.yaml")))
-        {
-            return ("pnpm", "install", "run build");
-        }
-        
-        if (File.Exists(Path.Combine(sourcePath, "package-lock.json")))
-        {
-            return ("npm", "ci", "run build");
-        }
-        
-        if (File.Exists(Path.Combine(sourcePath, "yarn.lock")))
-        {
-            return ("yarn", "install", "run build");
-        }
-
-        return ("npm", "install", "run build");
-    }
-
-    private static void RunCommand(string command, string arguments, string workingDirectory, string description)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = command,
-            Arguments = arguments,
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
-
-        using var process = Process.Start(psi);
-        if (process == null)
-        {
-            throw new InvalidOperationException($"Failed to start {command}");
-        }
-
-        var output = process.StandardOutput.ReadToEnd();
-        var error = process.StandardError.ReadToEnd();
-        process.WaitForExit();
-
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(
-                $"Failed to {description}: {command} {arguments}\nSTDERR: {error}\nSTDOUT: {output}");
-        }
-    }
-
-    private static void CopyDirectory(string sourceDir, string destinationDir)
-    {
-        Directory.CreateDirectory(destinationDir);
-        
-        foreach (var file in Directory.GetFiles(sourceDir))
-        {
-            var destFile = Path.Combine(destinationDir, Path.GetFileName(file));
-            File.Copy(file, destFile, overwrite: true);
-        }
-        
-        foreach (var subdir in Directory.GetDirectories(sourceDir))
-        {
-            var destSubdir = Path.Combine(destinationDir, Path.GetFileName(subdir));
-            CopyDirectory(subdir, destSubdir);
-        }
-    }
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
+        return Path.GetFullPath(Path.Combine(assemblyDir, Path.Combine(parts)));
     }
 }
