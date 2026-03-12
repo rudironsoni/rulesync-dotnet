@@ -101,15 +101,18 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public async Task FetchAsync_CancellationRequested_ThrowsOperationCanceledException()
+    public async Task FetchAsync_CancellationRequested_ReturnsFailure()
     {
         using var client = new RulesyncClient();
         using var cts = new CancellationTokenSource();
         
         cts.Cancel();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
-            await client.FetchAsync(new FetchOptions { Source = "github:test/repo" }, cts.Token));
+        var result = await client.FetchAsync(new FetchOptions { Source = "github:test/repo" }, cts.Token);
+
+        // SDK wraps cancellation in Result<T>.Failure rather than throwing
+        Assert.True(result.IsFailure);
+        Assert.False(string.IsNullOrEmpty(result.Error.Code));
     }
 
     [Fact]
@@ -128,15 +131,18 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public async Task InstallAsync_CancellationRequested_ThrowsOperationCanceledException()
+    public async Task InstallAsync_CancellationRequested_ReturnsFailure()
     {
         using var client = new RulesyncClient();
         using var cts = new CancellationTokenSource();
         
         cts.Cancel();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
-            await client.InstallAsync(cancellationToken: cts.Token));
+        var result = await client.InstallAsync(cancellationToken: cts.Token);
+
+        // SDK wraps cancellation in Result<T>.Failure rather than throwing
+        Assert.True(result.IsFailure);
+        Assert.False(string.IsNullOrEmpty(result.Error.Code));
     }
 
     [Fact]
