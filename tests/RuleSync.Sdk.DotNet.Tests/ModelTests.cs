@@ -41,7 +41,7 @@ public class ModelTests
         Assert.Null(options.Targets);
         Assert.Null(options.Features);
         Assert.Null(options.BaseDirs);
-        Assert.Null(options.ConfigPath);
+        Assert.Equal(string.Empty, options.ConfigPath);
         Assert.Equal(false, options.Verbose);
         Assert.Equal(true, options.Silent);
         Assert.Equal(false, options.Delete);
@@ -91,7 +91,7 @@ public class ModelTests
         var options = new ImportOptions { Target = ToolTarget.ClaudeCode };
 
         Assert.Null(options.Features);
-        Assert.Null(options.ConfigPath);
+        Assert.Equal(string.Empty, options.ConfigPath);
         Assert.Equal(false, options.Verbose);
         Assert.Equal(true, options.Silent);
         Assert.Equal(false, options.Global);

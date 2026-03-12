@@ -161,7 +161,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public async Task FetchAsync_CancellationDuringExecution_OperationCancelled()
+    public async Task FetchAsync_CancellationDuringExecution_ReturnsFailure()
     {
         using var client = new RulesyncClient();
         using var cts = new CancellationTokenSource();
@@ -173,8 +173,10 @@ public class ErrorHandlingTests
         
         cts.CancelAfter(1); // Cancel immediately
 
-        // Should throw OperationCanceledException
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
+        // SDK wraps cancellation in Result<T>.Failure rather than throwing
+        var result = await task;
+        Assert.True(result.IsFailure);
+        Assert.False(string.IsNullOrEmpty(result.Error.Code));
     }
 
     #endregion
@@ -182,16 +184,19 @@ public class ErrorHandlingTests
     #region Timeout and Resource Tests
 
     [Fact]
-    public async Task FetchAsync_WithTimeout_CancelsAfterTimeout()
+    public async Task FetchAsync_WithTimeout_ReturnsFailure()
     {
         using var client = new RulesyncClient();
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
 
         // Very short timeout - should fail quickly
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-            await client.FetchAsync(
-                new FetchOptions { Source = "github:large/repo" }, 
-                cts.Token));
+        var result = await client.FetchAsync(
+            new FetchOptions { Source = "github:large/repo" }, 
+            cts.Token);
+
+        // SDK wraps cancellation in Result<T>.Failure rather than throwing
+        Assert.True(result.IsFailure);
+        Assert.False(string.IsNullOrEmpty(result.Error.Code));
     }
 
     [Fact]
