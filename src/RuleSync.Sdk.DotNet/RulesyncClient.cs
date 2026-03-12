@@ -823,8 +823,8 @@ public sealed class RulesyncClient : IDisposable
             var runtimeId = GetRuntimeId();
             var exeName = GetNativeExecutableName();
 
-            // Look for native executable in tools/rulesync-native/{runtime-id}/
-            var nativePath = Path.Combine(assemblyDir, "..", "..", "..", "tools", "rulesync-native", runtimeId, exeName);
+            // Look for native executable in tools/rulesync/{runtime-id}/
+            var nativePath = Path.Combine(assemblyDir, "..", "..", "..", "tools", "rulesync", runtimeId, exeName);
             var fullPath = Path.GetFullPath(nativePath);
 
             return File.Exists(fullPath) ? fullPath : null;
