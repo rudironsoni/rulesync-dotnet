@@ -59,13 +59,6 @@
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
-  <!-- Build rulesync submodule before packing (only once, not per target framework) -->
-  <Target Name="BuildRulesync" BeforeTargets="BeforeBuild" Condition="Exists('$(RulesyncSubmodulePath)/package.json') AND !Exists('$(RulesyncSubmodulePath)/dist/cli/index.js')">
-    <Message Text="Building rulesync submodule..." Importance="high" />
-    <Exec WorkingDirectory="$(RulesyncSubmodulePath)" Command="pnpm install" />
-    <Exec WorkingDirectory="$(RulesyncSubmodulePath)" Command="pnpm run build" />
-  </Target>
-
   <!-- Include committed rulesync binaries from tools/rulesync/ (downloaded by sync workflow) -->
   <PropertyGroup>
     <BundledRulesyncPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)../../tools/rulesync'))</BundledRulesyncPath>
