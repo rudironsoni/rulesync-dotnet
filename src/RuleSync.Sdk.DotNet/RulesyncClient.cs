@@ -723,7 +723,13 @@ public sealed class RulesyncClient : IDisposable
             throw new ArgumentException("Config path contains invalid characters.", nameof(configPath));
         }
 
-        // Normalize the path to prevent traversal attacks
+        // Check for path traversal attempts BEFORE normalizing
+        if (configPath.Contains(".."))
+        {
+            throw new ArgumentException("Config path contains potentially dangerous traversal sequences.", nameof(configPath));
+        }
+
+        // Normalize the path
         var fullPath = Path.GetFullPath(configPath);
 
         return fullPath;

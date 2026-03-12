@@ -17,37 +17,48 @@ public class ErrorHandlingTests
     #region JSON Deserialization Error Tests
 
     [Fact]
-    public async Task InitAsync_InvalidJson_ReturnsDeserializationFailure()
+    public async Task InitAsync_ReturnsStructuredResult()
     {
         using var client = new RulesyncClient();
         
-        // This will fail if rulesync CLI returns invalid JSON
+        // Verify the method returns a properly structured result
         var result = await client.InitAsync();
 
-        // Should handle gracefully - either succeed or return structured error
-        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type
-        
-        if (!result.IsSuccess)
+        // Result should have a valid state (either success with value or failure with error)
+        if (result.IsSuccess)
         {
-            // Error should be descriptive
+            Assert.NotNull(result.Value);
+        }
+        else
+        {
+            // Error should be descriptive with non-empty code and message
             Assert.False(string.IsNullOrEmpty(result.Error.Code));
             Assert.False(string.IsNullOrEmpty(result.Error.Message));
         }
     }
 
     [Fact]
-    public async Task FetchAsync_MalformedJsonResponse_HandlesGracefully()
+    public async Task FetchAsync_ReturnsStructuredResult()
     {
         using var client = new RulesyncClient();
         var options = new FetchOptions
         {
-            Source = "github:invalid/repo/that/might/return/malformed/json"
+            Source = "github:invalid/repo/path"
         };
 
         var result = await client.FetchAsync(options);
 
-        // Should not throw, should return failure result
-        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type
+        // Should return structured result without throwing
+        if (result.IsSuccess)
+        {
+            Assert.NotNull(result.Value);
+            Assert.NotNull(result.Value.Files);
+        }
+        else
+        {
+            Assert.False(string.IsNullOrEmpty(result.Error.Code));
+            Assert.False(string.IsNullOrEmpty(result.Error.Message));
+        }
     }
 
     [Fact]
