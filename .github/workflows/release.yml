@@ -76,7 +76,7 @@ jobs:
             echo "override_stable=false" >> "$GITHUB_OUTPUT"
           else
             # Get base version from Directory.Build.props
-            BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' src/Directory.Build.props)
+            BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
             # Main branch push - create rc version
             # Count existing rc releases for this version
             RC_COUNT=$(git tag -l "v${BASE_VERSION}-rc*" | wc -l)
@@ -98,8 +98,8 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           VERSION_NUMBER="${VERSION#v}"
-          sed -i "s/<Version>.*<\/Version>/<Version>$VERSION_NUMBER<\/Version>/" src/Directory.Build.props
-          sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>$VERSION_NUMBER<\/VersionPrefix>/" src/Directory.Build.props
+          sed -i "s/<Version>.*<\/Version>/<Version>$VERSION_NUMBER<\/Version>/" Directory.Build.props
+          sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>$VERSION_NUMBER<\/VersionPrefix>/" Directory.Build.props
           echo "Updated version to $VERSION_NUMBER"
 
       - name: Setup Bun

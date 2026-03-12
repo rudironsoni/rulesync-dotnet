@@ -61,8 +61,8 @@ jobs:
         run: |
           VERSION_NUMBER="${VERSION#v}"
 
-          sed -i "s/<Version>.*<\/Version>/<Version>$VERSION_NUMBER<\/Version>/" src/Directory.Build.props
-          sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>$VERSION_NUMBER<\/VersionPrefix>/" src/Directory.Build.props
+          sed -i "s/<Version>.*<\/Version>/<Version>$VERSION_NUMBER<\/Version>/" Directory.Build.props
+          sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>$VERSION_NUMBER<\/VersionPrefix>/" Directory.Build.props
 
           echo "$VERSION" > .rulesync-version
 
@@ -75,7 +75,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add rulesync src/Directory.Build.props .rulesync-version
+          git add rulesync Directory.Build.props .rulesync-version
           git commit -m "chore: sync with rulesync $VERSION"
 
           # Delete tag if exists (local and remote)
