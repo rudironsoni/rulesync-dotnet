@@ -74,7 +74,7 @@ jobs:
           done
           
           # Make Unix binaries executable
-          chmod +x linux-x64/rulesync osx-x64/rulesync osx-arm64/rulesync 2>/dev/null || true
+          chmod +x linux-x64/rulesync linux-arm64/rulesync darwin-x64/rulesync darwin-arm64/rulesync 2>/dev/null || true
           
           cd ../..
           echo "Organized binaries in tools/rulesync/"
