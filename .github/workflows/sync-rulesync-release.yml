@@ -43,13 +43,49 @@ jobs:
             echo "version=$LATEST" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Update submodule
+      - name: Download rulesync binaries
+        if: steps.check-sync.outputs.needs_sync == 'true'
+        env:
+          VERSION: ${{ steps.check-sync.outputs.version }}
+        run: |
+          mkdir -p tools/rulesync
+          
+          # Download all platform binaries
+          PLATFORMS=("linux-x64" "osx-x64" "osx-arm64" "win-x64")
+          
+          for PLATFORM in "${PLATFORMS[@]}"; do
+            echo "Downloading rulesync $VERSION for $PLATFORM..."
+            curl -L -o "tools/rulesync/rulesync-${PLATFORM}.zip" \
+              "https://github.com/dyoshikawa/rulesync/releases/download/${VERSION}/rulesync-${PLATFORM}.zip"
+          done
+          
+          echo "Downloaded all platform binaries"
+
+      - name: Extract and organize binaries
+        if: steps.check-sync.outputs.needs_sync == 'true'
+        run: |
+          cd tools/rulesync
+          
+          # Extract each platform
+          for ZIP in *.zip; do
+            PLATFORM=$(basename "$ZIP" .zip)
+            mkdir -p "$PLATFORM"
+            unzip -o "$ZIP" -d "$PLATFORM"
+            rm "$ZIP"
+          done
+          
+          # Make Unix binaries executable
+          chmod +x linux-x64/rulesync osx-x64/rulesync osx-arm64/rulesync 2>/dev/null || true
+          
+          cd ../..
+          echo "Organized binaries in tools/rulesync/"
+
+      - name: Update submodule to matching tag
         if: steps.check-sync.outputs.needs_sync == 'true'
         env:
           VERSION: ${{ steps.check-sync.outputs.version }}
         run: |
           cd rulesync
-          git fetch --unshallow origin || git fetch origin
           git fetch origin tag "$VERSION"
           git checkout "$VERSION"
           cd ..
@@ -75,7 +111,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add rulesync Directory.Build.props .rulesync-version
+          git add rulesync tools/rulesync Directory.Build.props .rulesync-version
           git commit -m "chore: sync with rulesync $VERSION"
 
           # Delete tag if exists (local and remote)
