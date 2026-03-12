@@ -2,7 +2,9 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace Rulesync.Sdk.DotNet.Tests;
@@ -76,18 +78,14 @@ public class BundledDiscoveryTests
             return; // Skip - bundled not available
         }
 
-        Assert.True(File.Exists(Path.Combine(bundledPath, "package.json")),
-            "Bundled rulesync should contain package.json");
-
-        Assert.True(Directory.Exists(Path.Combine(bundledPath, "dist")),
-            "Bundled rulesync should contain dist directory");
-
-        Assert.True(File.Exists(Path.Combine(bundledPath, "dist", "cli", "index.js")),
-            "Bundled rulesync should contain dist/cli/index.js");
+        // Native binary should exist
+        var binaryName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
+        Assert.True(File.Exists(Path.Combine(bundledPath, binaryName)),
+            $"Bundled rulesync should contain {binaryName}");
     }
 
     [Fact]
-    public void GetBundledRulesyncPath_BundledCliJs_IsReadable()
+    public void GetBundledRulesyncPath_BundledBinary_IsExecutable()
     {
         var bundledPath = GetBundledRulesyncPath();
         if (bundledPath == null)
@@ -95,11 +93,13 @@ public class BundledDiscoveryTests
             return; // Skip - bundled not available
         }
 
-        var cliJsPath = Path.Combine(bundledPath, "dist", "cli", "index.js");
+        var binaryName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
+        var binaryPath = Path.Combine(bundledPath, binaryName);
 
-        var content = File.ReadAllText(cliJsPath);
-        Assert.False(string.IsNullOrWhiteSpace(content), "cli.js should have content");
-        Assert.Contains("rulesync", content.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase);
+        // Binary should exist and be non-empty
+        var fileInfo = new FileInfo(binaryPath);
+        Assert.True(fileInfo.Exists, $"Binary {binaryName} should exist");
+        Assert.True(fileInfo.Length > 1000000, $"Binary should be >1MB (actual: {fileInfo.Length} bytes)"); // Native binaries are large
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class BundledDiscoveryTests
     }
 
     [Fact]
-    public void BundledPackageJson_ContainsValidName()
+    public void BundledBinary_IsNativeExecutable()
     {
         var bundledPath = GetBundledRulesyncPath();
         if (bundledPath == null)
@@ -155,25 +155,36 @@ public class BundledDiscoveryTests
             return; // Skip - bundled not available
         }
 
-        var packageJsonPath = Path.Combine(bundledPath, "package.json");
-        var content = File.ReadAllText(packageJsonPath);
+        var binaryName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
+        var binaryPath = Path.Combine(bundledPath, binaryName);
 
-        Assert.Contains("\"name\":", content);
-        Assert.Contains("rulesync", content.ToLowerInvariant());
+        // Verify it's a native binary (not a shell script or JS)
+        var bytes = File.ReadAllBytes(binaryPath).Take(4).ToArray();
+        var header = BitConverter.ToString(bytes);
+
+        // ELF (Linux), Mach-O (macOS), or PE (Windows) header
+        bool isNative = header.StartsWith("7F-45-4C-46") || // ELF
+                       header.StartsWith("CF-FA-ED-FE") || // Mach-O 64-bit
+                       header.StartsWith("FE-ED-FA-CE") || // Mach-O 32-bit
+                       header.StartsWith("4D-5A");          // PE (Windows)
+
+        Assert.True(isNative, $"Binary should be native executable, got header: {header}");
     }
 
     [Fact]
     public void BundledRulesync_VersionIsPresent()
     {
-        var bundledPath = GetBundledRulesyncPath();
-        if (bundledPath == null)
+        // Version is tracked in .rulesync-version file at repo root
+        var versionFile = Path.Combine("..", "..", "..", "..", ".rulesync-version");
+        var fullPath = Path.GetFullPath(versionFile);
+        
+        if (!File.Exists(fullPath))
         {
-            return; // Skip - bundled not available
+            return; // Skip - version file not available
         }
 
-        var packageJsonPath = Path.Combine(bundledPath, "package.json");
-        var content = File.ReadAllText(packageJsonPath);
-
-        Assert.Contains("\"version\":", content);
+        var version = File.ReadAllText(fullPath).Trim();
+        Assert.False(string.IsNullOrEmpty(version), "Version should be present in .rulesync-version");
+        Assert.StartsWith("v", version);
     }
 }
