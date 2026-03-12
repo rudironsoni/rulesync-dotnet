@@ -25,6 +25,17 @@ public class BundledDiscoveryTests
             return null;
         }
 
+        // Check for platform-specific subdirectory structure (tools/rulesync/windows-x64/)
+        var platform = GetPlatformIdentifier();
+        var platformPath = Path.Combine(assemblyDirectory, "..", "..", "tools", "rulesync", platform);
+        var normalizedPlatformPath = Path.GetFullPath(platformPath);
+        
+        if (Directory.Exists(normalizedPlatformPath))
+        {
+            return normalizedPlatformPath;
+        }
+
+        // Check for flat structure (legacy)
         var toolsPath = Path.Combine(assemblyDirectory, "..", "..", "tools", "rulesync");
         var normalizedPath = Path.GetFullPath(toolsPath);
 
@@ -186,5 +197,30 @@ public class BundledDiscoveryTests
         var version = File.ReadAllText(fullPath).Trim();
         Assert.False(string.IsNullOrEmpty(version), "Version should be present in .rulesync-version");
         Assert.StartsWith("v", version);
+    }
+
+    private static string GetPlatformIdentifier()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return "windows-x64";
+        }
+        
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 
+                ? "darwin-arm64" 
+                : "darwin-x64";
+        }
+        
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                ? "linux-arm64"
+                : "linux-x64";
+        }
+        
+        throw new PlatformNotSupportedException(
+            $"Platform not supported: {RuntimeInformation.OSDescription}");
     }
 }
