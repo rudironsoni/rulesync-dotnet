@@ -103,37 +103,15 @@ jobs:
           sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>$VERSION_NUMBER<\/VersionPrefix>/" Directory.Build.props
           echo "Updated version to $VERSION_NUMBER"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Build rulesync
-        working-directory: rulesync
+      - name: Verify committed binaries exist
         run: |
-          pnpm install
-          pnpm run build
-
-      - name: Build native executables
-        run: node src/RuleSync.Sdk.DotNet/build-native-executables.js --all
-
-      - name: List native executables
-        run: ls -la native-binaries/*/rulesync*
+          ls -la tools/rulesync/*/rulesync*
+          echo "Using committed binaries from tools/rulesync/"
 
       - name: Restore dependencies
         run: dotnet restore
@@ -232,10 +210,11 @@ jobs:
           echo "## Native Executables" >> release-notes.md
           echo "" >> release-notes.md
           echo "This release includes standalone native executables (no Node.js required):" >> release-notes.md
-          echo "- `linux-x64/rulesync` (~105 MB)" >> release-notes.md
-          echo "- `osx-x64/rulesync` (~69 MB)" >> release-notes.md
-          echo "- `osx-arm64/rulesync` (~64 MB)" >> release-notes.md
-          echo "- `win-x64/rulesync.exe` (~116 MB)" >> release-notes.md
+          echo "- \`linux-x64/rulesync\` (~105 MB)" >> release-notes.md
+          echo "- \`linux-arm64/rulesync\` (~98 MB)" >> release-notes.md
+          echo "- \`darwin-x64/rulesync\` (~69 MB)" >> release-notes.md
+          echo "- \`darwin-arm64/rulesync\` (~64 MB)" >> release-notes.md
+          echo "- \`windows-x64/rulesync.exe\` (~116 MB)" >> release-notes.md
           echo "" >> release-notes.md
           echo "The NuGet package automatically uses the appropriate native executable for your platform." >> release-notes.md
           echo "" >> release-notes.md
