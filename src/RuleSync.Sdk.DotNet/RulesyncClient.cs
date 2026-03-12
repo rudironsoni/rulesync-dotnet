@@ -717,6 +717,12 @@ public sealed class RulesyncClient : IDisposable
 
     private static string ValidateConfigPath(string configPath)
     {
+        // Allow empty paths (will be handled by CLI defaults)
+        if (string.IsNullOrEmpty(configPath))
+        {
+            return configPath;
+        }
+
         // Check for null bytes (path injection)
         if (configPath.Contains('\0'))
         {

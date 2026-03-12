@@ -86,15 +86,18 @@ public class ErrorHandlingTests
     #region Cancellation Tests
 
     [Fact]
-    public async Task InitAsync_CancellationRequested_ThrowsOperationCanceledException()
+    public async Task InitAsync_CancellationRequested_ReturnsFailure()
     {
         using var client = new RulesyncClient();
         using var cts = new CancellationTokenSource();
         
         cts.Cancel();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
-            await client.InitAsync(cancellationToken: cts.Token));
+        var result = await client.InitAsync(cancellationToken: cts.Token);
+
+        // SDK wraps cancellation in Result<T>.Failure rather than throwing
+        Assert.True(result.IsFailure);
+        Assert.False(string.IsNullOrEmpty(result.Error.Code));
     }
 
     [Fact]
@@ -110,15 +113,18 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public async Task GitignoreAsync_CancellationRequested_ThrowsOperationCanceledException()
+    public async Task GitignoreAsync_CancellationRequested_ReturnsFailure()
     {
         using var client = new RulesyncClient();
         using var cts = new CancellationTokenSource();
         
         cts.Cancel();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
-            await client.GitignoreAsync(cancellationToken: cts.Token));
+        var result = await client.GitignoreAsync(cancellationToken: cts.Token);
+
+        // SDK wraps cancellation in Result<T>.Failure rather than throwing
+        Assert.True(result.IsFailure);
+        Assert.False(string.IsNullOrEmpty(result.Error.Code));
     }
 
     [Fact]
@@ -134,15 +140,18 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public async Task UpdateAsync_CancellationRequested_ThrowsOperationCanceledException()
+    public async Task UpdateAsync_CancellationRequested_ReturnsFailure()
     {
         using var client = new RulesyncClient();
         using var cts = new CancellationTokenSource();
         
         cts.Cancel();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
-            await client.UpdateAsync(cancellationToken: cts.Token));
+        var result = await client.UpdateAsync(cancellationToken: cts.Token);
+
+        // SDK wraps cancellation in Result<T>.Failure rather than throwing
+        Assert.True(result.IsFailure);
+        Assert.False(string.IsNullOrEmpty(result.Error.Code));
     }
 
     [Fact]
