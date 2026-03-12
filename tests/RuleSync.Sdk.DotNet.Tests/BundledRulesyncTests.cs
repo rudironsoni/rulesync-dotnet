@@ -222,6 +222,10 @@ public class BundledRulesyncTests
     {
         var bundledPath = GetBundledRulesyncPath();
 
+        Assert.NotNull(bundledPath);
+        Assert.True(Directory.Exists(bundledPath),
+            $"Bundled rulesync not found at {bundledPath}. Run 'dotnet build' first.");
+
         using var client = new RulesyncClient(
             nodeExecutablePath: "node",
             rulesyncPath: bundledPath,
@@ -243,6 +247,10 @@ public class BundledRulesyncTests
     public async Task RulesyncClient_WithBundledRulesync_CanExecuteImport()
     {
         var bundledPath = GetBundledRulesyncPath();
+
+        Assert.NotNull(bundledPath);
+        Assert.True(Directory.Exists(bundledPath),
+            $"Bundled rulesync not found at {bundledPath}. Run 'dotnet build' first.");
 
         using var client = new RulesyncClient(
             nodeExecutablePath: "node",
