@@ -66,6 +66,8 @@ jobs:
         env:
           VERSION: ${{ steps.check-sync.outputs.version }}
         run: |
+          # Remove existing LFS pointers to force fresh download
+          rm -rf tools/rulesync/*/rulesync*
           mkdir -p tools/rulesync
           
           # Download all platform binaries (raw executables, not zip files)
