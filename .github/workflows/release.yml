@@ -47,6 +47,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
           fetch-tags: true
+          lfs: true
 
       - name: Determine version
         id: version
