@@ -75,8 +75,12 @@ public class BundledPackageFixture : IDisposable
     private static string? GetBundledSourcePath()
     {
         // Try multiple locations where bundled source might exist
+        // CI builds from rulesync/ submodule, not from bundled/ subdirectory
         var searchPaths = new[]
         {
+            Path.Combine("..", "..", "..", "..", "rulesync"),
+            Path.Combine("..", "..", "..", "rulesync"),
+            Path.Combine("..", "..", "..", "..", "src", "RuleSync.Sdk.DotNet", "bundled"),
             Path.Combine("..", "..", "..", "..", "src", "RuleSync.Sdk.DotNet", "bundled"),
             Path.Combine("..", "..", "..", "src", "RuleSync.Sdk.DotNet", "bundled"),
             Path.Combine("src", "RuleSync.Sdk.DotNet", "bundled"),
