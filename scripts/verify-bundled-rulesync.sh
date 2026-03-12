@@ -18,7 +18,7 @@ echo "=== Verifying Bundled Rulesync in NuGet Package ==="
 echo ""
 
 # Find the main SDK package (not SourceGenerators, not symbols)
-NUPKG_FILE=$(find "$NUPKG_DIR" -name "RuleSync.Sdk.DotNet.[0-9]*.nupkg" ! -name "*SourceGenerators*" ! -name "*.snupkg" | head -1)
+NUPKG_FILE="$(find "$NUPKG_DIR" -name "RuleSync.Sdk.DotNet.[0-9]*.nupkg" ! -name "*SourceGenerators*" ! -name "*.snupkg" | head -1)"
 
 if [ -z "$NUPKG_FILE" ]; then
     echo -e "${RED}ERROR: No NuGet package found in $NUPKG_DIR/${NC}"

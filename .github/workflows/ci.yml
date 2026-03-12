@@ -23,12 +23,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '24.2.0'  # Pin to specific version for reproducible builds
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: '10.28.1'
+
+      - name: Build rulesync submodule
+        run: |
+          cd rulesync
+          pnpm install
+          pnpm run build
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4

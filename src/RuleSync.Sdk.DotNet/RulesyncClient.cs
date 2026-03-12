@@ -367,8 +367,10 @@ public sealed class RulesyncClient : IDisposable
             var cliPath = Path.Combine(fullPath, "dist", "cli", "index.js");
             return File.Exists(cliPath) ? fullPath : null;
         }
-        catch
+        catch (Exception ex)
         {
+            // Log exception for debugging but gracefully fall back
+            Console.WriteLine($"[RuleSync SDK] Failed to locate bundled rulesync: {ex.Message}");
             return null;
         }
     }
@@ -400,8 +402,10 @@ public sealed class RulesyncClient : IDisposable
 
             return File.Exists(fullPath) ? fullPath : null;
         }
-        catch
+        catch (Exception ex)
         {
+            // Log exception for debugging but gracefully fall back
+            Console.WriteLine($"[RuleSync SDK] Failed to locate native executable: {ex.Message}");
             return null;
         }
     }

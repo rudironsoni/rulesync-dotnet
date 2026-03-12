@@ -13,6 +13,25 @@ const path = require('path');
 const RULESYNC_SUBMODULE = path.join(__dirname, '..', '..', 'rulesync');
 const OUTPUT_DIR = path.join(__dirname, '..', '..', 'native-binaries');
 
+// Timeout for executable verification (milliseconds)
+const VERIFICATION_TIMEOUT_MS = 10000;
+
+// Platform mappings shared across all functions
+const PLATFORM_MAPPINGS = {
+    // Node.js platform -> internal platform name
+    nodeToInternal: {
+        'win32': 'windows',
+        'darwin': 'darwin',
+        'linux': 'linux'
+    },
+    // Internal platform -> runtime ID prefix
+    toRuntimeId: {
+        'windows': 'win',
+        'darwin': 'osx',
+        'linux': 'linux'
+    }
+};
+
 // All supported platforms for cross-compilation
 const ALL_PLATFORMS = [
     { platform: 'linux', arch: 'x64', target: 'bun-linux-x64', exeName: 'rulesync' },
@@ -78,11 +97,11 @@ function main() {
         // Build only current platform
         const platform = process.platform;
         const arch = process.arch;
+        const normalizedPlatform = normalizePlatform(platform);
         const runtimeId = getRuntimeId(platform, arch);
 
         const config = ALL_PLATFORMS.find(p =>
-            p.platform === (platform === 'darwin' ? 'darwin' : platform === 'win32' ? 'windows' : 'linux') &&
-            p.arch === arch
+            p.platform === normalizedPlatform && p.arch === arch
         );
 
         if (!config) {
@@ -92,6 +111,15 @@ function main() {
 
         buildPlatform(bunPath, cliJsPath, config);
     }
+}
+
+/**
+ * Normalizes Node.js platform strings to our internal platform names.
+ * @param {string} platform - Node.js process.platform value
+ * @returns {string} Normalized platform name ('darwin', 'linux', 'windows')
+ */
+function normalizePlatform(platform) {
+    return PLATFORM_MAPPINGS.nodeToInternal[platform] || platform;
 }
 
 function buildPlatform(bunPath, cliJsPath, config) {
@@ -136,7 +164,7 @@ function buildPlatform(bunPath, cliJsPath, config) {
         try {
             const result = execFileSync(outputExe, ['--version'], {
                 encoding: 'utf8',
-                timeout: 10000
+                timeout: VERIFICATION_TIMEOUT_MS
             });
             console.log('    Version:', result.trim());
         } catch (error) {
@@ -176,54 +204,28 @@ function findBun() {
     return null;
 }
 
+/**
+ * Gets the runtime identifier for a Node.js platform/arch combination.
+ * @param {string} platform - Node.js process.platform value
+ * @param {string} arch - Node.js process.arch value
+ * @returns {string} Runtime ID (e.g., 'win-x64', 'linux-arm64')
+ */
 function getRuntimeId(platform, arch) {
-    const platformMap = {
-        'win32': 'win',
-        'darwin': 'osx',
-        'linux': 'linux'
-    };
-
-    const archMap = {
-        'x64': 'x64',
-        'arm64': 'arm64'
-    };
-
-    const p = platformMap[platform] || platform;
-    const a = archMap[arch] || arch;
-
-    return p + '-' + a;
+    const normalized = normalizePlatform(platform);
+    const prefix = PLATFORM_MAPPINGS.toRuntimeId[normalized] || normalized;
+    return prefix + '-' + arch;
 }
 
+/**
+ * Gets the runtime identifier from a platform config object.
+ * @param {Object} config - Platform configuration object
+ * @param {string} config.platform - Internal platform name
+ * @param {string} config.arch - Architecture
+ * @returns {string} Runtime ID (e.g., 'osx-arm64', 'win-x64')
+ */
 function getRuntimeIdFromConfig(config) {
-    const platformMap = {
-        'darwin': 'osx',
-        'windows': 'win',
-        'linux': 'linux'
-    };
-    return platformMap[config.platform] + '-' + config.arch;
-}
-
-function getBunTarget(platform, arch) {
-    // Bun target format: bun-darwin-x64, bun-linux-x64, bun-windows-x64, etc.
-    const platformMap = {
-        'win32': 'windows',
-        'darwin': 'darwin',
-        'linux': 'linux'
-    };
-
-    const archMap = {
-        'x64': 'x64',
-        'arm64': 'arm64'
-    };
-
-    const p = platformMap[platform];
-    const a = archMap[arch];
-
-    if (!p || !a) {
-        return null;
-    }
-
-    return 'bun-' + p + '-' + a;
+    const prefix = PLATFORM_MAPPINGS.toRuntimeId[config.platform] || config.platform;
+    return prefix + '-' + config.arch;
 }
 
 main();
