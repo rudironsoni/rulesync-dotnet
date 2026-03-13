@@ -122,11 +122,6 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Verify committed binaries exist
-        run: |
-          ls -la tools/rulesync/*/rulesync*
-          echo "Using committed binaries from tools/rulesync/"
-
       - name: Restore dependencies
         run: dotnet restore
 
@@ -137,24 +132,14 @@ jobs:
         if: ${{ github.event.inputs.skip_tests != 'true' }}
         run: dotnet test --configuration Release --no-build --verbosity normal
 
-      - name: Pack (full variant with native executables)
+      - name: Pack (downloads binaries and creates NuGet package)
         run: dotnet pack src/RuleSync.Sdk.DotNet/RuleSync.Sdk.DotNet.csproj --configuration Release --no-build --output ./nupkg
-
-      - name: Pack (slim variant without native executables)
-        run: dotnet pack src/RuleSync.Sdk.DotNet/RuleSync.Sdk.DotNet.Slim.csproj --configuration Release --no-build --output ./nupkg
 
       - name: Upload NuGet artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nuget-packages
           path: ./nupkg/*.nupkg
-          retention-days: 30
-
-      - name: Upload native executables
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-executables
-          path: tools/rulesync/**/rulesync*
           retention-days: 30
 
       - name: Delete existing NuGet packages (if override enabled)
@@ -168,7 +153,6 @@ jobs:
           # List of packages to delete
           PACKAGES=(
             "RuleSync.Sdk.DotNet"
-            "RuleSync.Sdk.DotNet.Slim"
           )
           
           for PACKAGE in "${PACKAGES[@]}"; do
@@ -223,7 +207,7 @@ jobs:
           echo "" >> release-notes.md
           echo "## Native Executables" >> release-notes.md
           echo "" >> release-notes.md
-          echo "This release includes standalone native executables (no Node.js required):" >> release-notes.md
+          echo "This release includes standalone native executables bundled in the NuGet package (no Node.js required):" >> release-notes.md
           echo "- \`linux-x64/rulesync\` (~105 MB)" >> release-notes.md
           echo "- \`linux-arm64/rulesync\` (~98 MB)" >> release-notes.md
           echo "- \`darwin-x64/rulesync\` (~69 MB)" >> release-notes.md
@@ -231,11 +215,6 @@ jobs:
           echo "- \`windows-x64/rulesync.exe\` (~116 MB)" >> release-notes.md
           echo "" >> release-notes.md
           echo "The NuGet package automatically uses the appropriate native executable for your platform." >> release-notes.md
-          echo "" >> release-notes.md
-          echo "## Package Variants" >> release-notes.md
-          echo "" >> release-notes.md
-          echo "- **RuleSync.Sdk.DotNet** (~110MB): Includes native executables for all platforms. No Node.js required." >> release-notes.md
-          echo "- **RuleSync.Sdk.DotNet.Slim** (~2MB): JS-only variant. Requires Node.js installed on target machine." >> release-notes.md
           echo "" >> release-notes.md
           echo "Synced with rulesync $RULESYNC_VERSION" >> release-notes.md
 

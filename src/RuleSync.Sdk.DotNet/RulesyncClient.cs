@@ -57,7 +57,7 @@ public sealed class RulesyncClient : IRulesyncClient
     }
 
     /// <summary>
-    /// Gets the native executable path, downloading if necessary.
+    /// Gets the native executable path, checking bundled binaries first, then downloading if necessary.
     /// </summary>
     private async ValueTask<string> GetExecutablePathAsync(CancellationToken cancellationToken = default)
     {
@@ -71,10 +71,18 @@ public sealed class RulesyncClient : IRulesyncClient
             return _nativeExecutablePath;
         }
 
-        // Download binary if not cached
+        // First, try to find bundled binary in the NuGet package
+        var bundledPath = GetBundledBinaryPath();
+        if (!string.IsNullOrEmpty(bundledPath) && File.Exists(bundledPath))
+        {
+            _nativeExecutablePath = bundledPath;
+            return bundledPath;
+        }
+
+        // Fall back to downloading binary if bundled not found
         var version = GetRulesyncVersion();
         var path = await Install.BinaryDownloader.EnsureBinaryAsync(version, cancellationToken);
-        
+
         if (path is null)
         {
             throw new InvalidOperationException(
@@ -83,6 +91,75 @@ public sealed class RulesyncClient : IRulesyncClient
 
         _nativeExecutablePath = path;
         return path;
+    }
+
+    /// <summary>
+    /// Gets the path to the bundled binary in the NuGet package vendor directory.
+    /// Returns null if the bundled binary is not found.
+    /// </summary>
+    private static string? GetBundledBinaryPath()
+    {
+        try
+        {
+            var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (string.IsNullOrEmpty(assemblyDir))
+            {
+                return null;
+            }
+
+            // Get the RID for the current platform
+            var rid = GetRuntimeIdentifier();
+            var executableName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
+
+            // Check vendor/rulesync/{rid}/ relative to assembly location
+            // The assembly is in lib/{tfm}/, so vendor is at ../../vendor/
+            var vendorPath = Path.Combine(assemblyDir, "..", "..", "vendor", "rulesync", rid, executableName);
+            vendorPath = Path.GetFullPath(vendorPath);
+
+            if (File.Exists(vendorPath))
+            {
+                return vendorPath;
+            }
+
+            // Also check directly in assembly dir (for development/testing scenarios)
+            var directPath = Path.Combine(assemblyDir, "vendor", "rulesync", rid, executableName);
+            directPath = Path.GetFullPath(directPath);
+
+            if (File.Exists(directPath))
+            {
+                return directPath;
+            }
+
+            return null;
+        }
+        catch
+        {
+            // If anything goes wrong, return null to fall back to download
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the Runtime Identifier (RID) for the current platform.
+    /// Maps OSPlatform and Architecture to RID format used by .NET.
+    /// </summary>
+    private static string GetRuntimeIdentifier()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return "win-x64";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
+        }
+
+        // Default to linux-x64 for unknown platforms (best guess)
+        return "linux-x64";
     }
 
     /// <summary>
@@ -747,12 +824,19 @@ public sealed class RulesyncClient : IRulesyncClient
     }
 
     /// <summary>
-    /// Gets the path to the cached native executable for the current platform.
-    /// Downloads if not present.
+    /// Gets the path to the native executable for the current platform.
+    /// Checks bundled binaries first, then cache, then downloads if not present.
     /// </summary>
     private static async ValueTask<string?> GetNativeExecutablePathAsync(CancellationToken cancellationToken = default)
     {
-        // First check cache directory
+        // First check bundled binary in NuGet package
+        var bundledPath = GetBundledBinaryPath();
+        if (!string.IsNullOrEmpty(bundledPath) && File.Exists(bundledPath))
+        {
+            return bundledPath;
+        }
+
+        // Then check cache directory
         var platform = GetPlatformIdentifier();
         var executableName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
         var version = GetRulesyncVersion();

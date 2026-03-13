@@ -18,6 +18,10 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/rudironsoni/rulesync-dotnet</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rudironsoni/rulesync-dotnet</PackageProjectUrl>
+
+    <!-- Binary download settings -->
+    <RulesyncBinaryCache>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)obj/rulesync-binaries/'))</RulesyncBinaryCache>
+    <RulesyncVersionFile>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)../../.rulesync-version'))</RulesyncVersionFile>
   </PropertyGroup>
 
   <!-- Source Generator Reference -->
@@ -59,11 +63,78 @@
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
-  <!-- Include committed rulesync binaries from tools/rulesync/ (downloaded by sync workflow) -->
-  <PropertyGroup>
-    <BundledRulesyncPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)../../tools/rulesync'))</BundledRulesyncPath>
-  </PropertyGroup>
-  
-  <!-- Binaries are downloaded at runtime from GitHub releases -->
-  <!-- No embedded binaries to avoid LFS quota issues -->
+  <!--
+    Download rulesync binaries from GitHub releases during pack.
+    Binaries are cached in obj/rulesync-binaries/ and included in the NuGet package.
+  -->
+
+  <!-- Read version from .rulesync-version file -->
+  <Target Name="ReadRulesyncVersion" BeforeTargets="DownloadRulesyncBinaries">
+    <ReadLinesFromFile File="$(RulesyncVersionFile)">
+      <Output TaskParameter="Lines" PropertyName="RulesyncVersion" />
+    </ReadLinesFromFile>
+    <Message Text="RuleSync version: $(RulesyncVersion)" Importance="high" />
+  </Target>
+
+  <!-- Download all platform binaries -->
+  <Target Name="DownloadRulesyncBinaries" BeforeTargets="_GetPackageFiles" DependsOnTargets="ReadRulesyncVersion">
+    <PropertyGroup>
+      <RulesyncBaseUrl>https://github.com/dyoshikawa/rulesync/releases/download/$(RulesyncVersion)</RulesyncBaseUrl>
+      <!-- Map platform identifiers to release asset names and RID folder names -->
+      <_LinuxX64Url>$(RulesyncBaseUrl)/rulesync-linux-x64</_LinuxX64Url>
+      <_LinuxArm64Url>$(RulesyncBaseUrl)/rulesync-linux-arm64</_LinuxArm64Url>
+      <_DarwinX64Url>$(RulesyncBaseUrl)/rulesync-darwin-x64</_DarwinX64Url>
+      <_DarwinArm64Url>$(RulesyncBaseUrl)/rulesync-darwin-arm64</_DarwinArm64Url>
+      <_WindowsX64Url>$(RulesyncBaseUrl)/rulesync-windows-x64.exe</_WindowsX64Url>
+    </PropertyGroup>
+
+    <!-- Ensure cache directory exists -->
+    <MakeDir Directories="$(RulesyncBinaryCache)linux-x64;$(RulesyncBinaryCache)linux-arm64;$(RulesyncBinaryCache)osx-x64;$(RulesyncBinaryCache)osx-arm64;$(RulesyncBinaryCache)win-x64" />
+
+    <!-- Download linux-x64 binary -->
+    <Exec Command="curl -fsSL -o &quot;$(RulesyncBinaryCache)linux-x64/rulesync&quot; &quot;$(_LinuxX64Url)&quot;" ConsoleToMSBuild="true" StandardErrorImportance="high">
+      <Output TaskParameter="ExitCode" PropertyName="_LinuxX64ExitCode" />
+    </Exec>
+    <Error Condition="'$(_LinuxX64ExitCode)' != '0'" Text="Failed to download rulesync binary for linux-x64 from $(_LinuxX64Url)" />
+    <Exec Condition="!$([MSBuild]::IsOSPlatform('Windows'))" Command="chmod +x &quot;$(RulesyncBinaryCache)linux-x64/rulesync&quot;" />
+
+    <!-- Download linux-arm64 binary -->
+    <Exec Command="curl -fsSL -o &quot;$(RulesyncBinaryCache)linux-arm64/rulesync&quot; &quot;$(_LinuxArm64Url)&quot;" ConsoleToMSBuild="true" StandardErrorImportance="high">
+      <Output TaskParameter="ExitCode" PropertyName="_LinuxArm64ExitCode" />
+    </Exec>
+    <Error Condition="'$(_LinuxArm64ExitCode)' != '0'" Text="Failed to download rulesync binary for linux-arm64 from $(_LinuxArm64Url)" />
+    <Exec Condition="!$([MSBuild]::IsOSPlatform('Windows'))" Command="chmod +x &quot;$(RulesyncBinaryCache)linux-arm64/rulesync&quot;" />
+
+    <!-- Download osx-x64 binary -->
+    <Exec Command="curl -fsSL -o &quot;$(RulesyncBinaryCache)osx-x64/rulesync&quot; &quot;$(_DarwinX64Url)&quot;" ConsoleToMSBuild="true" StandardErrorImportance="high">
+      <Output TaskParameter="ExitCode" PropertyName="_OsxX64ExitCode" />
+    </Exec>
+    <Error Condition="'$(_OsxX64ExitCode)' != '0'" Text="Failed to download rulesync binary for osx-x64 from $(_DarwinX64Url)" />
+    <Exec Condition="!$([MSBuild]::IsOSPlatform('Windows'))" Command="chmod +x &quot;$(RulesyncBinaryCache)osx-x64/rulesync&quot;" />
+
+    <!-- Download osx-arm64 binary -->
+    <Exec Command="curl -fsSL -o &quot;$(RulesyncBinaryCache)osx-arm64/rulesync&quot; &quot;$(_DarwinArm64Url)&quot;" ConsoleToMSBuild="true" StandardErrorImportance="high">
+      <Output TaskParameter="ExitCode" PropertyName="_OsxArm64ExitCode" />
+    </Exec>
+    <Error Condition="'$(_OsxArm64ExitCode)' != '0'" Text="Failed to download rulesync binary for osx-arm64 from $(_DarwinArm64Url)" />
+    <Exec Condition="!$([MSBuild]::IsOSPlatform('Windows'))" Command="chmod +x &quot;$(RulesyncBinaryCache)osx-arm64/rulesync&quot;" />
+
+    <!-- Download win-x64 binary -->
+    <Exec Command="curl -fsSL -o &quot;$(RulesyncBinaryCache)win-x64/rulesync.exe&quot; &quot;$(_WindowsX64Url)&quot;" ConsoleToMSBuild="true" StandardErrorImportance="high">
+      <Output TaskParameter="ExitCode" PropertyName="_WinX64ExitCode" />
+    </Exec>
+    <Error Condition="'$(_WinX64ExitCode)' != '0'" Text="Failed to download rulesync binary for win-x64 from $(_WindowsX64Url)" />
+
+    <Message Text="Successfully downloaded all rulesync binaries to $(RulesyncBinaryCache)" Importance="high" />
+
+    <!-- Add binaries to None items for packing with explicit paths -->
+    <!-- Note: PackagePath is the directory, filename is preserved from the source -->
+    <ItemGroup>
+      <None Include="$(RulesyncBinaryCache)linux-x64/rulesync" Pack="true" PackagePath="vendor/rulesync/linux-x64/" />
+      <None Include="$(RulesyncBinaryCache)linux-arm64/rulesync" Pack="true" PackagePath="vendor/rulesync/linux-arm64/" />
+      <None Include="$(RulesyncBinaryCache)osx-x64/rulesync" Pack="true" PackagePath="vendor/rulesync/osx-x64/" />
+      <None Include="$(RulesyncBinaryCache)osx-arm64/rulesync" Pack="true" PackagePath="vendor/rulesync/osx-arm64/" />
+      <None Include="$(RulesyncBinaryCache)win-x64/rulesync.exe" Pack="true" PackagePath="vendor/rulesync/win-x64/" />
+    </ItemGroup>
+  </Target>
 </Project>
