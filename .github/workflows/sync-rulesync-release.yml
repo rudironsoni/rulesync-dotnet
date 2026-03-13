@@ -26,7 +26,7 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-          lfs: true
+          # lfs: disabled - binaries downloaded at runtime
 
       - name: Get latest rulesync release
         id: get-release

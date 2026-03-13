@@ -47,7 +47,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
           fetch-tags: true
-          lfs: true
+          # lfs: disabled - binaries downloaded at runtime
 
       - name: Determine version
         id: version
