@@ -357,3 +357,6 @@ coverage.cobertura.xml
 
 # Native binaries - built at CI time
 native-binaries/
+
+# Git worktrees
+.worktrees/
