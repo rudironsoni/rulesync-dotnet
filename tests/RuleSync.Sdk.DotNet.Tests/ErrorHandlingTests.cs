@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Rulesync.Sdk.DotNet.Models;
@@ -83,6 +84,12 @@ public class ErrorHandlingTests
     [Fact]
     public async Task UpdateAsync_PartialJsonResponse_HandlesGracefully()
     {
+        // Skip on Windows - OS doesn't allow replacing running executables
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return;
+        }
+
         using var client = new RulesyncClient();
 
         var result = await client.UpdateAsync();

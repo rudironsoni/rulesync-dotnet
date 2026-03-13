@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Rulesync.Sdk.DotNet.Models;
 using Xunit;
@@ -324,6 +325,12 @@ public class NewCommandTests
     [Fact]
     public async Task UpdateAsync_DefaultOptions_CompletesSuccessfully()
     {
+        // Skip on Windows - OS doesn't allow replacing running executables
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return;
+        }
+
         using var client = new RulesyncClient();
         var options = new UpdateOptions();
 
