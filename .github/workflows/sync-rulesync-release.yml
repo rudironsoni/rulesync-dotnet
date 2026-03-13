@@ -66,7 +66,8 @@ jobs:
         env:
           VERSION: ${{ steps.check-sync.outputs.version }}
         run: |
-          # Remove existing LFS pointers to force fresh download
+          # Note: Binaries are now downloaded at runtime by the SDK
+          # We still download them here for the submodule, but don't commit them to LFS
           rm -rf tools/rulesync/*/rulesync*
           mkdir -p tools/rulesync
           
@@ -160,12 +161,6 @@ jobs:
             git push --delete origin "$VERSION"
           fi
 
-      - name: Setup Git LFS
-        if: steps.check-sync.outputs.needs_sync == 'true'
-        run: |
-          git lfs install
-          git lfs track "tools/rulesync/**/rulesync*"
-
       - name: Commit, tag and push
         if: steps.check-sync.outputs.needs_sync == 'true'
         env:
@@ -173,13 +168,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Force update LFS-tracked files
-          git add -f tools/rulesync/*/rulesync* .gitattributes rulesync Directory.Build.props .rulesync-version
-          git commit -m "chore: sync with rulesync $VERSION" || echo "Commit may be empty if only LFS objects changed"
-
-          # Push LFS objects first (before regular push)
-          echo "Pushing Git LFS objects..."
-          git lfs push origin main --all
+          # Note: Binaries are downloaded at runtime, not stored in repo
+          git add rulesync Directory.Build.props .rulesync-version
+          git commit -m "chore: sync with rulesync $VERSION" || echo "Commit may be empty"
 
           # Pull latest changes to avoid race conditions
           git pull --rebase origin main
