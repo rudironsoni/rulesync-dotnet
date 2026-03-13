@@ -140,7 +140,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-executables
-          path: native-binaries/**
+          path: tools/rulesync/**/rulesync*
           retention-days: 30
 
       - name: Delete existing NuGet packages (if override enabled)
