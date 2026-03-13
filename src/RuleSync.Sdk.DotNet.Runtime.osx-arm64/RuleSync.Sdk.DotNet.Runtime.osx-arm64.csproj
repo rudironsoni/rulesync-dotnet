@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>RuleSync.Sdk.DotNet.Runtime.osx-arm64</AssemblyName>
+    <PackageId>RuleSync.Sdk.DotNet.Runtime.osx-arm64</PackageId>
+    <Description>Native rulesync executable for macOS ARM64</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)../../tools/rulesync/darwin-arm64/rulesync" Pack="true">
+      <PackagePath>tools/rulesync/darwin-arm64/rulesync</PackagePath>
+    </Content>
+  </ItemGroup>
+
+</Project>

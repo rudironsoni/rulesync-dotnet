@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>RuleSync.Sdk.DotNet.Runtime.win-x64</AssemblyName>
+    <PackageId>RuleSync.Sdk.DotNet.Runtime.win-x64</PackageId>
+    <Description>Native rulesync executable for Windows x64</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)../../tools/rulesync/windows-x64/rulesync.exe" Pack="true">
+      <PackagePath>tools/rulesync/windows-x64/rulesync.exe</PackagePath>
+    </Content>
+  </ItemGroup>
+
+</Project>

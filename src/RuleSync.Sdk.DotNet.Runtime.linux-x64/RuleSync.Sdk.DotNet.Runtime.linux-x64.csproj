@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>RuleSync.Sdk.DotNet.Runtime.linux-x64</AssemblyName>
+    <PackageId>RuleSync.Sdk.DotNet.Runtime.linux-x64</PackageId>
+    <Description>Native rulesync executable for Linux x64</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)../../tools/rulesync/linux-x64/rulesync" Pack="true">
+      <PackagePath>tools/rulesync/linux-x64/rulesync</PackagePath>
+    </Content>
+  </ItemGroup>
+
+</Project>
