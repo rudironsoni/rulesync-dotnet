@@ -78,7 +78,7 @@ public class ErrorHandlingTests
         {
             Assert.False(string.IsNullOrEmpty(result.Error.Code));
             Assert.False(string.IsNullOrEmpty(result.Error.Message));
-        }; // Result is a value type
+        }
     }
 
     [Fact]
