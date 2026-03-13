@@ -1,6 +1,6 @@
 #!/bin/bash
 # verify-bundled-rulesync.sh
-# Verifies that the RuleSync.Sdk.DotNet NuGet package contains bundled rulesync files
+# Verifies that the RuleSync.Sdk.DotNet NuGet package contains bundled native binaries
 
 set -e
 
@@ -46,13 +46,16 @@ else
     exit 1
 fi
 
-# Check for key bundled files
+# Check for native binaries
 echo ""
-echo "Checking for key bundled files..."
+echo "Checking for native binaries..."
 
 REQUIRED_FILES=(
-    "tools/rulesync/dist/cli/index.js"
-    "tools/rulesync/package.json"
+    "tools/rulesync/linux-x64/rulesync"
+    "tools/rulesync/linux-arm64/rulesync"
+    "tools/rulesync/darwin-x64/rulesync"
+    "tools/rulesync/darwin-arm64/rulesync"
+    "tools/rulesync/windows-x64/rulesync.exe"
 )
 
 MISSING_FILES=()
@@ -70,7 +73,7 @@ done
 echo ""
 if [ ${#MISSING_FILES[@]} -eq 0 ]; then
     echo -e "${GREEN}=== Verification PASSED ===${NC}"
-    echo "All required bundled files are present."
+    echo "All required native binaries are present."
     exit 0
 else
     echo -e "${RED}=== Verification FAILED ===${NC}"
