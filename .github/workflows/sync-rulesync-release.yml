@@ -61,56 +61,6 @@ jobs:
             echo "is_override=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Download rulesync binaries
-        if: steps.check-sync.outputs.needs_sync == 'true'
-        env:
-          VERSION: ${{ steps.check-sync.outputs.version }}
-        run: |
-          # Note: Binaries are now downloaded at runtime by the SDK
-          # We still download them here for the submodule, but don't commit them to LFS
-          rm -rf tools/rulesync/*/rulesync*
-          mkdir -p tools/rulesync
-          
-          # Download all platform binaries (raw executables, not zip files)
-          declare -A PLATFORMS=(
-            ["linux-x64"]="rulesync-linux-x64"
-            ["linux-arm64"]="rulesync-linux-arm64"
-            ["darwin-x64"]="rulesync-darwin-x64"
-            ["darwin-arm64"]="rulesync-darwin-arm64"
-            ["windows-x64"]="rulesync-windows-x64.exe"
-          )
-          
-          for DIR in "${!PLATFORMS[@]}"; do
-            BINARY="${PLATFORMS[$DIR]}"
-            OUTFILE="$DIR/rulesync"
-            if [[ "$DIR" == "windows-x64" ]]; then
-              OUTFILE="$DIR/rulesync.exe"
-            fi
-            
-            echo "Downloading $BINARY for $VERSION..."
-            mkdir -p "tools/rulesync/$DIR"
-            curl -fL -o "tools/rulesync/$OUTFILE" \
-              "https://github.com/dyoshikawa/rulesync/releases/download/${VERSION}/${BINARY}" || {
-              echo "ERROR: Failed to download $BINARY for version ${VERSION}"
-              exit 1
-            }
-          done
-          
-          echo "Downloaded all platform binaries"
-          ls -la tools/rulesync/*/
-
-      - name: Make Unix binaries executable
-        if: steps.check-sync.outputs.needs_sync == 'true'
-        run: |
-          # Make Unix binaries executable
-          chmod +x tools/rulesync/linux-x64/rulesync \
-            tools/rulesync/linux-arm64/rulesync \
-            tools/rulesync/darwin-x64/rulesync \
-            tools/rulesync/darwin-arm64/rulesync 2>/dev/null || true
-          
-          echo "Organized binaries in tools/rulesync/"
-          ls -la tools/rulesync/*/
-
       - name: Update submodule to matching tag
         if: steps.check-sync.outputs.needs_sync == 'true'
         env:
