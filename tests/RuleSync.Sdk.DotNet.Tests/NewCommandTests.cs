@@ -331,6 +331,12 @@ public class NewCommandTests
             return;
         }
 
+        // Skip when no GitHub token available - avoids API rate limiting
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_TOKEN")))
+        {
+            return;
+        }
+
         using var client = new RulesyncClient();
         var options = new UpdateOptions();
 
@@ -346,6 +352,12 @@ public class NewCommandTests
     [Fact]
     public async Task UpdateAsync_WithCheckFlag_CompletesSuccessfully()
     {
+        // Skip when no GitHub token available - avoids API rate limiting
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_TOKEN")))
+        {
+            return;
+        }
+
         using var client = new RulesyncClient();
         var options = new UpdateOptions
         {
@@ -364,6 +376,12 @@ public class NewCommandTests
     [Fact]
     public async Task UpdateAsync_WithForceFlag_CompletesSuccessfully()
     {
+        // Skip when no GitHub token available - avoids API rate limiting
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_TOKEN")))
+        {
+            return;
+        }
+
         using var client = new RulesyncClient();
         var options = new UpdateOptions
         {
@@ -561,6 +579,18 @@ public class NewCommandTests
     [Fact]
     public async Task UpdateAsync_NullOptions_UsesDefaults()
     {
+        // Skip on Windows - OS doesn't allow replacing running executables
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return;
+        }
+
+        // Skip when no GitHub token available - avoids API rate limiting
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_TOKEN")))
+        {
+            return;
+        }
+
         using var client = new RulesyncClient();
 
         var result = await client.UpdateAsync(null);

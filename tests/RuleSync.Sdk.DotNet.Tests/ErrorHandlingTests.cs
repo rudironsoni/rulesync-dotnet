@@ -90,6 +90,12 @@ public class ErrorHandlingTests
             return;
         }
 
+        // Skip when no GitHub token available - avoids API rate limiting
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_TOKEN")))
+        {
+            return;
+        }
+
         using var client = new RulesyncClient();
 
         var result = await client.UpdateAsync();
