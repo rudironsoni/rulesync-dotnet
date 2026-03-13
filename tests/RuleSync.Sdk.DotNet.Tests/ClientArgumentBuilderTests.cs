@@ -303,7 +303,7 @@ public class ClientArgumentBuilderTests
     public async Task GenerateArgs_ConfigPath_CompletesSuccessfully()
     {
         using var client = new RulesyncClient();
-        var options = new GenerateOptions { ConfigPath = "/path/to/config.js" };
+        var options = new GenerateOptions { ConfigPath = "config.json" };
 
         // Should complete without throwing - validates argument building works
         var result = await client.GenerateAsync(options);
@@ -323,7 +323,7 @@ public class ClientArgumentBuilderTests
         var options = new ImportOptions
         {
             Target = ToolTarget.ClaudeCode,
-            ConfigPath = "/path/to/config.js"
+            ConfigPath = "rulesync.jsonc"
         };
 
         // Should complete without throwing - validates argument building works
@@ -396,8 +396,8 @@ public class ClientArgumentBuilderTests
             SimulateCommands = true,
             SimulateSubagents = true,
             SimulateSkills = true,
-            DryRun = true,
-            Check = true
+            DryRun = true
+            // Note: Check is mutually exclusive with DryRun
         };
 
         // Should complete without throwing - validates argument building works

@@ -528,15 +528,11 @@ public sealed class RulesyncClient : IRulesyncClient
         if (options.Silent == true) args.Add("--silent");
         if (options.Global == true) args.Add("--global");
 
-        // Always validate config path if provided (even if empty, to catch invalid characters)
-        if (options.ConfigPath is not null)
+        // Note: import command does not support --config option
+        // ConfigPath is validated for security but not passed to CLI
+        if (!string.IsNullOrEmpty(options.ConfigPath))
         {
-            var configPath = ValidateConfigPath(options.ConfigPath);
-            if (!string.IsNullOrEmpty(configPath))
-            {
-                args.Add("--config");
-                args.Add(configPath);
-            }
+            _ = ValidateConfigPath(options.ConfigPath);
         }
 
         return args.ToArray();

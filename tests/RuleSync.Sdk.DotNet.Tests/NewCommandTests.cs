@@ -165,10 +165,18 @@ public class NewCommandTests
     [Fact]
     public async Task FetchAsync_WithSource_CompletesSuccessfully()
     {
+        var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+        if (string.IsNullOrEmpty(token))
+        {
+            // Skip test when no GitHub token available
+            return;
+        }
+
         using var client = new RulesyncClient();
         var options = new FetchOptions
         {
-            Source = "github:owner/repo/path"
+            Source = "github:owner/repo/path",
+            Token = token
         };
 
         var result = await client.FetchAsync(options);
@@ -183,13 +191,20 @@ public class NewCommandTests
     [Fact]
     public async Task FetchAsync_WithAllOptions_CompletesSuccessfully()
     {
+        var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+        if (string.IsNullOrEmpty(token))
+        {
+            // Skip test when no GitHub token available
+            return;
+        }
+
         using var client = new RulesyncClient();
         var options = new FetchOptions
         {
             Source = "github:owner/repo/path",
             Path = "./fetched-configs",
             Force = true,
-            Token = "ghp_token123",
+            Token = token,
             Verbose = true,
             Silent = false
         };
@@ -360,10 +375,17 @@ public class NewCommandTests
     [Fact]
     public async Task UpdateAsync_WithToken_CompletesSuccessfully()
     {
+        var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+        if (string.IsNullOrEmpty(token))
+        {
+            // Skip test when no GitHub token available
+            return;
+        }
+
         using var client = new RulesyncClient();
         var options = new UpdateOptions
         {
-            Token = "ghp_token123"
+            Token = token
         };
 
         var result = await client.UpdateAsync(options);
@@ -397,7 +419,7 @@ public class NewCommandTests
         using var client = new RulesyncClient();
         var options = new InitOptions
         {
-            ConfigPath = "/path/to/config",
+            ConfigPath = "test-config/rulesync.jsonc",
             Verbose = true,
             Silent = true
         };
@@ -417,7 +439,7 @@ public class NewCommandTests
         using var client = new RulesyncClient();
         var options = new GitignoreOptions
         {
-            ConfigPath = "/path/to/config",
+            ConfigPath = "rulesync.jsonc",
             Verbose = true,
             Silent = true
         };
@@ -440,7 +462,7 @@ public class NewCommandTests
             Update = true,
             Frozen = true,
             Token = "token123",
-            ConfigPath = "/path/to/config",
+            ConfigPath = "test-config/rulesync.jsonc",
             Verbose = true,
             Silent = true
         };
@@ -457,12 +479,19 @@ public class NewCommandTests
     [Fact]
     public async Task UpdateAsync_AllOptionsSet_CompletesSuccessfully()
     {
+        var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+        if (string.IsNullOrEmpty(token))
+        {
+            // Skip test when no GitHub token available
+            return;
+        }
+
         using var client = new RulesyncClient();
         var options = new UpdateOptions
         {
             Check = true,
             Force = true,
-            Token = "token123",
+            Token = token,
             Verbose = true,
             Silent = true
         };
