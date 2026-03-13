@@ -87,7 +87,10 @@ public class ErrorHandlingTests
 
         var result = await client.UpdateAsync();
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 

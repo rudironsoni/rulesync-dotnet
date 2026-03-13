@@ -22,8 +22,11 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -37,8 +40,11 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -52,8 +58,11 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -67,8 +76,11 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -93,8 +105,11 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -108,8 +123,11 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -123,8 +141,11 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -152,8 +173,11 @@ public class NewCommandTests
 
         var result = await client.FetchAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -172,8 +196,11 @@ public class NewCommandTests
 
         var result = await client.FetchAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -201,8 +228,11 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -216,8 +246,11 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -231,8 +264,11 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -246,8 +282,11 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -275,8 +314,11 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -290,8 +332,11 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -305,8 +350,11 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -320,8 +368,11 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -353,8 +404,11 @@ public class NewCommandTests
 
         var result = await client.InitAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -370,8 +424,11 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -390,8 +447,11 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -409,8 +469,11 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -424,8 +487,11 @@ public class NewCommandTests
 
         var result = await client.InitAsync(null);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -435,8 +501,11 @@ public class NewCommandTests
 
         var result = await client.GitignoreAsync(null);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -446,8 +515,11 @@ public class NewCommandTests
 
         var result = await client.InstallAsync(null);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -457,8 +529,11 @@ public class NewCommandTests
 
         var result = await client.UpdateAsync(null);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
-        Assert.NotNull(result.Value);; // Result is a value type, check it has a state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion

@@ -50,7 +50,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.GenerateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -59,7 +62,10 @@ public class ClientAsyncTests : IDisposable
     {
         var result = await _client.GenerateAsync(null);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -83,7 +89,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.GenerateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -102,7 +111,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.ImportAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -120,7 +132,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.ImportAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -199,7 +214,10 @@ public class ClientAsyncTests : IDisposable
         // All operations completed successfully
         Assert.All(results, r =>
         {
-            Assert.True(r.IsSuccess, $"Expected success but got: {r.Error?.Message}");
+            if (!r.IsSuccess)
+            {
+                Assert.Fail($"Expected success but got: {r.Error.Message}");
+            }
             Assert.NotNull(r.Value);
         });
     }
@@ -224,7 +242,10 @@ public class ClientAsyncTests : IDisposable
         // All operations completed successfully
         Assert.All(results, r =>
         {
-            Assert.True(r.IsSuccess, $"Expected success but got: {r.Error?.Message}");
+            if (!r.IsSuccess)
+            {
+                Assert.Fail($"Expected success but got: {r.Error.Message}");
+            }
             Assert.NotNull(r.Value);
         });
     }
@@ -267,7 +288,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.GenerateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -286,7 +310,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.GenerateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -297,7 +324,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.ImportAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -311,7 +341,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.GenerateAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 
@@ -326,7 +359,10 @@ public class ClientAsyncTests : IDisposable
 
         var result = await _client.ImportAsync(options);
 
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
         Assert.NotNull(result.Value);
     }
 

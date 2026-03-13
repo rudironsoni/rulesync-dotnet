@@ -479,7 +479,7 @@ public sealed class RulesyncClient : IRulesyncClient
         }
 
         if (options.Verbose == true) args.Add("--verbose");
-        if (options.Silent == false) args.Add("--no-silent");
+        if (options.Silent == true) args.Add("--silent");
         if (options.Delete == true) args.Add("--delete");
         if (options.Global == true) args.Add("--global");
         if (options.SimulateCommands == true) args.Add("--simulate-commands");
@@ -515,7 +515,7 @@ public sealed class RulesyncClient : IRulesyncClient
 
         var args = new System.Collections.Generic.List<string>();
         args.Add("import");
-        args.Add("--target");
+        args.Add("--targets");
         args.Add(ToCliValue(options.Target));
 
         if (options.Features?.Count > 0)
@@ -525,7 +525,7 @@ public sealed class RulesyncClient : IRulesyncClient
         }
 
         if (options.Verbose == true) args.Add("--verbose");
-        if (options.Silent == false) args.Add("--no-silent");
+        if (options.Silent == true) args.Add("--silent");
         if (options.Global == true) args.Add("--global");
 
         // Always validate config path if provided (even if empty, to catch invalid characters)
@@ -546,20 +546,11 @@ public sealed class RulesyncClient : IRulesyncClient
     {
         var args = new List<string> { "init" };
 
+        // Note: init command does not support --config, --verbose, or --silent options
+        // However, we still validate ConfigPath for security even though it's not passed to CLI
         if (!string.IsNullOrEmpty(options.ConfigPath))
         {
-            args.Add("--config");
-            args.Add(ValidateConfigPath(options.ConfigPath));
-        }
-
-        if (options.Verbose)
-        {
-            args.Add("--verbose");
-        }
-
-        if (options.Silent)
-        {
-            args.Add("--silent");
+            _ = ValidateConfigPath(options.ConfigPath);
         }
 
         return args.ToArray();
@@ -569,21 +560,7 @@ public sealed class RulesyncClient : IRulesyncClient
     {
         var args = new List<string> { "gitignore" };
 
-        if (!string.IsNullOrEmpty(options.ConfigPath))
-        {
-            args.Add("--config");
-            args.Add(ValidateConfigPath(options.ConfigPath));
-        }
-
-        if (options.Verbose)
-        {
-            args.Add("--verbose");
-        }
-
-        if (options.Silent)
-        {
-            args.Add("--silent");
-        }
+        // Note: gitignore command does not support --config, --verbose, or --silent options
 
         return args.ToArray();
     }
@@ -599,11 +576,6 @@ public sealed class RulesyncClient : IRulesyncClient
         {
             args.Add("--path");
             args.Add(options.Path);
-        }
-
-        if (options.Force)
-        {
-            args.Add("--force");
         }
 
         if (!string.IsNullOrEmpty(options.Token))
@@ -694,7 +666,6 @@ public sealed class RulesyncClient : IRulesyncClient
             args.Add("--silent");
         }
 
-        args.Add("--json");
         return args.ToArray();
     }
 
