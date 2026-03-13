@@ -27,10 +27,11 @@ namespace Rulesync.Sdk.DotNet;
 /// </summary>
 public sealed class RulesyncClient : IRulesyncClient
 {
-    private readonly string _nativeExecutablePath;
+    private string? _nativeExecutablePath;
     private readonly TimeSpan _timeout;
     private readonly bool _parseVerboseOutput;
     private readonly string? _workingDirectory;
+    private readonly string? _customExecutablePath;
     private bool _disposed;
 
     /// <summary>
@@ -52,13 +53,53 @@ public sealed class RulesyncClient : IRulesyncClient
         _timeout = options.Timeout;
         _parseVerboseOutput = options.ParseVerboseOutput;
         _workingDirectory = options.WorkingDirectory;
+        _customExecutablePath = options.ExecutablePath;
+    }
 
-        // Use custom executable path if provided, otherwise use bundled
-        _nativeExecutablePath = !string.IsNullOrEmpty(options.ExecutablePath)
-            ? options.ExecutablePath
-            : GetNativeExecutablePath() 
-                ?? throw new InvalidOperationException(
-                    "Bundled rulesync binary not found. Ensure the SDK is properly installed with bundled binaries.");
+    /// <summary>
+    /// Gets the native executable path, downloading if necessary.
+    /// </summary>
+    private async ValueTask<string> GetExecutablePathAsync(CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrEmpty(_customExecutablePath))
+        {
+            return _customExecutablePath;
+        }
+
+        if (!string.IsNullOrEmpty(_nativeExecutablePath))
+        {
+            return _nativeExecutablePath;
+        }
+
+        // Download binary if not cached
+        var version = GetRulesyncVersion();
+        var path = await Install.BinaryDownloader.EnsureBinaryAsync(version, cancellationToken);
+        
+        if (path is null)
+        {
+            throw new InvalidOperationException(
+                "Failed to download rulesync binary. Please check your internet connection or provide a custom executable path.");
+        }
+
+        _nativeExecutablePath = path;
+        return path;
+    }
+
+    /// <summary>
+    /// Gets the rulesync version from .rulesync-version file or defaults to latest.
+    /// </summary>
+    private static string GetRulesyncVersion()
+    {
+        var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        if (!string.IsNullOrEmpty(assemblyDir))
+        {
+            var versionFile = Path.Combine(assemblyDir, ".rulesync-version");
+            if (File.Exists(versionFile))
+            {
+                return File.ReadAllText(versionFile).Trim();
+            }
+        }
+        return "v7.18.1"; // Default version
     }
 
     /// <summary>
@@ -739,68 +780,34 @@ public sealed class RulesyncClient : IRulesyncClient
     }
 
     /// <summary>
-    /// Gets the path to the bundled native executable for the current platform.
+    /// Gets the path to the cached native executable for the current platform.
+    /// Downloads if not present.
     /// </summary>
-    private static string? GetNativeExecutablePath()
+    private static async ValueTask<string?> GetNativeExecutablePathAsync(CancellationToken cancellationToken = default)
     {
-        var assemblyLocation = Assembly.GetExecutingAssembly().Location;
-        var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
-
-        if (string.IsNullOrEmpty(assemblyDirectory))
-        {
-            return null;
-        }
-
+        // First check cache directory
         var platform = GetPlatformIdentifier();
         var executableName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "rulesync.exe" : "rulesync";
+        var version = GetRulesyncVersion();
+        var cacheDir = GetCacheDirectory();
+        var cachedPath = Path.Combine(cacheDir, version, platform, executableName);
 
-        // Try multiple locations in order of preference
-        var searchPaths = new[]
+        if (File.Exists(cachedPath))
         {
-            // Relative to assembly (production)
-            Path.Combine(assemblyDirectory, "..", "tools", "rulesync", platform, executableName),
-            // Direct in assembly directory (test output)
-            Path.Combine(assemblyDirectory, "tools", "rulesync", platform, executableName),
-            // Current directory (development)
-            Path.Combine("tools", "rulesync", platform, executableName),
-        };
-
-        foreach (var path in searchPaths)
-        {
-            var normalizedPath = Path.GetFullPath(path);
-            if (File.Exists(normalizedPath))
-            {
-                return normalizedPath;
-            }
+            return cachedPath;
         }
 
-        return null;
+        // Download binary
+        return await Install.BinaryDownloader.EnsureBinaryAsync(version, cancellationToken);
     }
 
     /// <summary>
-    /// Gets the path to the bundled rulesync JS bundle directory.
+    /// Gets the cache directory for downloaded binaries.
     /// </summary>
-    private static string? GetBundledRulesyncPath()
+    private static string GetCacheDirectory()
     {
-        var assemblyLocation = Assembly.GetExecutingAssembly().Location;
-        var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
-
-        if (string.IsNullOrEmpty(assemblyDirectory))
-        {
-            return null;
-        }
-
-        // Check for platform-specific subdirectory structure (tools/rulesync/windows-x64/)
-        var platform = GetPlatformIdentifier();
-        var platformPath = Path.Combine(assemblyDirectory, "..", "tools", "rulesync", platform);
-        var normalizedPlatformPath = Path.GetFullPath(platformPath);
-        
-        if (Directory.Exists(normalizedPlatformPath))
-        {
-            return normalizedPlatformPath;
-        }
-
-        return null;
+        var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(baseDir, "rulesync-dotnet", "binaries");
     }
 
     /// <summary>
@@ -884,8 +891,9 @@ public sealed class RulesyncClient : IRulesyncClient
             CreateNoWindow = true
         };
 
-        // Always use native executable
-        startInfo.FileName = _nativeExecutablePath;
+        // Get executable path (downloads if necessary)
+        var executablePath = await GetExecutablePathAsync(cancellationToken);
+        startInfo.FileName = executablePath;
 
         foreach (var arg in args)
         {

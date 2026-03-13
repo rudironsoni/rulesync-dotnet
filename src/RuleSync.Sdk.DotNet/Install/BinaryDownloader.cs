@@ -84,12 +84,25 @@ internal static class BinaryDownloader
             // Make executable on Unix
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                File.SetUnixFileMode(outputPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                // Use chmod to make file executable
+                var process = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "chmod",
+                        Arguments = $"+x \"{outputPath}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false
+                    }
+                };
+                process.Start();
+                process.WaitForExit();
             }
 
             return outputPath;
         }
-        catch (Exception ex)
+        catch
         {
             // Clean up partial download
             if (File.Exists(outputPath))
