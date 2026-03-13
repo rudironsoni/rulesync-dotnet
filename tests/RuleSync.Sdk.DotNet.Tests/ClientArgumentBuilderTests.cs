@@ -345,6 +345,14 @@ public class ClientArgumentBuilderTests
     public async Task GenerateArgs_MultipleTargets_CompletesSuccessfully()
     {
         using var client = new RulesyncClient();
+
+        // Initialize first - required for generate to work
+        var initResult = await client.InitAsync(new InitOptions { Silent = true });
+        if (!initResult.IsSuccess)
+        {
+            Assert.Fail($"Init failed: {initResult.Error?.Message}");
+        }
+
         var options = new GenerateOptions
         {
             Targets = new[] { ToolTarget.ClaudeCode, ToolTarget.Cursor, ToolTarget.Copilot },
