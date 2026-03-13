@@ -68,7 +68,16 @@ public class ErrorHandlingTests
 
         var result = await client.InstallAsync();
 
-        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type
+        // Result should have a valid state
+        if (result.IsSuccess)
+        {
+            Assert.NotNull(result.Value);
+        }
+        else
+        {
+            Assert.False(string.IsNullOrEmpty(result.Error.Code));
+            Assert.False(string.IsNullOrEmpty(result.Error.Message));
+        }; // Result is a value type
     }
 
     [Fact]
@@ -78,7 +87,8 @@ public class ErrorHandlingTests
 
         var result = await client.UpdateAsync();
 
-        Assert.True(result.IsSuccess || result.IsFailure); // Result is a value type
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     #endregion

@@ -1,21 +1,33 @@
 #nullable enable
 
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Rulesync.Sdk.DotNet.Configuration;
 using Rulesync.Sdk.DotNet.Models;
 using Xunit;
 
 namespace Rulesync.Sdk.DotNet.Tests;
 
+/// <summary>
+/// Tests for ClientAsync that require a rulesync project.
+/// Uses collection fixture to ensure .rulesync/ directory exists.
+/// </summary>
+[Collection("RulesyncProject")]
 public class ClientAsyncTests : IDisposable
 {
     private readonly RulesyncClient _client;
+    private readonly RulesyncTestFixture _fixture;
 
-    public ClientAsyncTests()
+    public ClientAsyncTests(RulesyncTestFixture fixture)
     {
-        // Use longer timeout for CI environments
-        _client = new RulesyncClient();
+        _fixture = fixture;
+        // Use longer timeout for CI environments and set working directory
+        _client = new RulesyncClient(new RulesyncOptions
+        {
+            WorkingDirectory = fixture.IsInitialized ? fixture.TestDirectory : null
+        });
     }
 
     public void Dispose()
@@ -29,28 +41,26 @@ public class ClientAsyncTests : IDisposable
     [Fact]
     public async Task GenerateAsync_WithValidOptions_ReturnsResult()
     {
-        // This test requires rulesync to be available
-        // It may fail if rulesync is not installed
         var options = new GenerateOptions
         {
             Targets = new[] { ToolTarget.ClaudeCode },
             Features = new[] { Feature.Rules },
-            DryRun = true // Don't actually generate files
+            DryRun = true
         };
 
-        // Should complete without throwing - validates the async operation works
         var result = await _client.GenerateAsync(options);
 
-        // Verify result has valid state (operation completed)
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
     public async Task GenerateAsync_NullOptions_UsesDefaults()
     {
-        // Should complete without throwing - uses default options
         var result = await _client.GenerateAsync(null);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -71,10 +81,10 @@ public class ClientAsyncTests : IDisposable
             Check = true
         };
 
-        // Should complete without throwing - validates all options work
         var result = await _client.GenerateAsync(options);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -90,10 +100,10 @@ public class ClientAsyncTests : IDisposable
             Features = new[] { Feature.Rules }
         };
 
-        // Should complete without throwing - validates the async operation works
         var result = await _client.ImportAsync(options);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -108,10 +118,10 @@ public class ClientAsyncTests : IDisposable
             Global = true
         };
 
-        // Should complete without throwing - validates all options work
         var result = await _client.ImportAsync(options);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -186,8 +196,12 @@ public class ClientAsyncTests : IDisposable
 
         var results = await Task.WhenAll(tasks);
 
-        // All operations completed without throwing
-        Assert.All(results, r => Assert.True(r.IsSuccess || r.IsFailure));
+        // All operations completed successfully
+        Assert.All(results, r =>
+        {
+            Assert.True(r.IsSuccess, $"Expected success but got: {r.Error?.Message}");
+            Assert.NotNull(r.Value);
+        });
     }
 
     [Fact]
@@ -207,8 +221,12 @@ public class ClientAsyncTests : IDisposable
 
         var results = await Task.WhenAll(tasks);
 
-        // All operations completed without throwing
-        Assert.All(results, r => Assert.True(r.IsSuccess || r.IsFailure));
+        // All operations completed successfully
+        Assert.All(results, r =>
+        {
+            Assert.True(r.IsSuccess, $"Expected success but got: {r.Error?.Message}");
+            Assert.NotNull(r.Value);
+        });
     }
 
     [Fact]
@@ -247,10 +265,10 @@ public class ClientAsyncTests : IDisposable
             Verbose = true // More output
         };
 
-        // Should complete without throwing - validates output handling works
         var result = await _client.GenerateAsync(options);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -266,10 +284,10 @@ public class ClientAsyncTests : IDisposable
             Features = new[] { Feature.Rules }
         };
 
-        // Should complete without throwing - validates default token handling
         var result = await _client.GenerateAsync(options);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -277,10 +295,10 @@ public class ClientAsyncTests : IDisposable
     {
         var options = new ImportOptions { Target = ToolTarget.ClaudeCode };
 
-        // Should complete without throwing - validates default token handling
         var result = await _client.ImportAsync(options);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -291,10 +309,10 @@ public class ClientAsyncTests : IDisposable
             Targets = Array.Empty<ToolTarget>()
         };
 
-        // Should complete without throwing - validates empty targets handling
         var result = await _client.GenerateAsync(options);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -306,10 +324,10 @@ public class ClientAsyncTests : IDisposable
             Features = Array.Empty<Feature>()
         };
 
-        // Should complete without throwing - validates empty features handling
         var result = await _client.ImportAsync(options);
 
-        // Verify result has valid state
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error?.Message}");
+        Assert.NotNull(result.Value);
     }
 
     #endregion

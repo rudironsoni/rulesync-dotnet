@@ -38,7 +38,12 @@ public class ClientArgumentBuilderTests
         // Should complete without throwing - validates argument building works
         var result = await client.GenerateAsync(options);
 
-        // Verify result has valid state (it should since we got here)
+        // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -73,6 +78,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -121,6 +131,11 @@ public class ClientArgumentBuilderTests
         var result = await client.ImportAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -137,6 +152,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -149,6 +169,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -161,6 +186,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -173,6 +203,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -185,6 +220,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -197,6 +237,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -209,6 +254,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -221,6 +271,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -233,6 +288,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -249,6 +309,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -265,6 +330,11 @@ public class ClientArgumentBuilderTests
         var result = await client.ImportAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -285,6 +355,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -301,6 +376,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -324,6 +404,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -340,6 +425,11 @@ public class ClientArgumentBuilderTests
         var result = await client.ImportAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -358,6 +448,11 @@ public class ClientArgumentBuilderTests
         var result = await client.ImportAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion
@@ -374,6 +469,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -386,6 +486,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -398,6 +503,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -410,6 +520,11 @@ public class ClientArgumentBuilderTests
         var result = await client.GenerateAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -426,6 +541,11 @@ public class ClientArgumentBuilderTests
         var result = await client.ImportAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     [Fact]
@@ -442,6 +562,11 @@ public class ClientArgumentBuilderTests
         var result = await client.ImportAsync(options);
 
         // Verify result has valid state
+        if (!result.IsSuccess)
+        {
+            Assert.Fail($"Expected success but got: {result.Error.Message}");
+        }
+        Assert.NotNull(result.Value);
     }
 
     #endregion

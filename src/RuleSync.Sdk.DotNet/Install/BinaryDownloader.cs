@@ -17,9 +17,11 @@ internal static class BinaryDownloader
 {
     private const string BaseUrl = "https://github.com/dyoshikawa/rulesync/releases/download";
     private static readonly HttpClient HttpClient = new();
+    private static readonly SemaphoreSlim DownloadLock = new(1, 1);
 
     /// <summary>
     /// Gets the path to the cached binary, downloading if necessary.
+    /// Uses a lock to prevent concurrent downloads of the same binary.
     /// </summary>
     public static async Task<string?> EnsureBinaryAsync(
         string version,
@@ -30,18 +32,33 @@ internal static class BinaryDownloader
         var cacheDir = GetCacheDirectory();
         var binaryPath = Path.Combine(cacheDir, version, platform, binaryName);
 
-        // Check if already downloaded
+        // Fast path: check if already downloaded (no lock needed)
         if (File.Exists(binaryPath))
         {
             return binaryPath;
         }
 
-        // Download binary
-        return await DownloadBinaryAsync(version, platform, binaryPath, cancellationToken);
+        // Slow path: download with lock to prevent concurrent downloads
+        await DownloadLock.WaitAsync(cancellationToken);
+        try
+        {
+            // Double-check after acquiring lock
+            if (File.Exists(binaryPath))
+            {
+                return binaryPath;
+            }
+
+            return await DownloadBinaryAsync(version, platform, binaryPath, cancellationToken);
+        }
+        finally
+        {
+            DownloadLock.Release();
+        }
     }
 
     /// <summary>
     /// Downloads the binary for the specified platform.
+    /// Downloads to a temp file first, then moves to final location to prevent partial files.
     /// </summary>
     private static async Task<string?> DownloadBinaryAsync(
         string version,
@@ -49,6 +66,9 @@ internal static class BinaryDownloader
         string outputPath,
         CancellationToken cancellationToken)
     {
+        // Use temp file during download to prevent partial files from being executed
+        var tempPath = outputPath + ".tmp";
+        
         try
         {
             // Ensure directory exists
@@ -71,17 +91,21 @@ internal static class BinaryDownloader
 
             var url = $"{BaseUrl}/{version}/{assetName}";
 
-            // Download binary
+            // Download to temp file first
 #if NET5_0_OR_GREATER
             await using var response = await HttpClient.GetStreamAsync(url, cancellationToken);
-            await using var fileStream = File.Create(outputPath);
+            await using var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous);
 #else
             using var response = await HttpClient.GetStreamAsync(url);
-            using var fileStream = File.Create(outputPath);
+            using var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous);
 #endif
             await response.CopyToAsync(fileStream, cancellationToken);
+            
+            // Ensure all data is flushed to disk before making executable
+            await fileStream.FlushAsync(cancellationToken);
+            fileStream.Close();
 
-            // Make executable on Unix
+            // Make executable on Unix before moving
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // Use chmod to make file executable
@@ -90,7 +114,7 @@ internal static class BinaryDownloader
                     StartInfo = new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "chmod",
-                        Arguments = $"+x \"{outputPath}\"",
+                        Arguments = $"+x \"{tempPath}\"",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false
@@ -100,15 +124,37 @@ internal static class BinaryDownloader
                 process.WaitForExit();
             }
 
-            return outputPath;
-        }
-        catch
-        {
-            // Clean up partial download
+            // Atomic move: rename temp file to final path
+            // This prevents "text file busy" by ensuring file is complete before being accessible
+            // Delete destination if exists (for compatibility with older frameworks)
             if (File.Exists(outputPath))
             {
                 File.Delete(outputPath);
             }
+            File.Move(tempPath, outputPath);
+
+            return outputPath;
+        }
+        catch
+        {
+            // Clean up partial downloads
+            try
+            {
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+            }
+            catch { /* Ignore cleanup errors */ }
+            
+            try
+            {
+                if (File.Exists(outputPath))
+                {
+                    File.Delete(outputPath);
+                }
+            }
+            catch { /* Ignore cleanup errors */ }
 
             return null;
         }

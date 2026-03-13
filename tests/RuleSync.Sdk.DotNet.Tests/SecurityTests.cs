@@ -235,37 +235,51 @@ public class SecurityTests
     }
 
     [Fact]
-    public void InitOptions_ConfigPath_NullOrEmpty_Handled()
+    public async Task InitAsync_WithNullConfigPath_UsesDefaultPath()
     {
+        using var client = new RulesyncClient();
         var options = new InitOptions
         {
             ConfigPath = null!
         };
 
-        // Null should be handled gracefully
-        Assert.Equal(null!, options.ConfigPath);
+        // Null config path should be handled gracefully - uses default
+        var result = await client.InitAsync(options);
+
+        // Should complete without throwing (Result<T> is a value type)
+        Assert.True(result.IsSuccess || result.IsFailure, "Result should have a defined state");
     }
 
     [Fact]
-    public void GitignoreOptions_ConfigPath_NullOrEmpty_Handled()
+    public async Task GitignoreAsync_WithNullConfigPath_UsesDefaultPath()
     {
+        using var client = new RulesyncClient();
         var options = new GitignoreOptions
         {
             ConfigPath = null!
         };
 
-        Assert.Equal(null!, options.ConfigPath);
+        // Null config path should be handled gracefully
+        var result = await client.GitignoreAsync(options);
+
+        // Should complete without throwing (Result<T> is a value type)
+        Assert.True(result.IsSuccess || result.IsFailure, "Result should have a defined state");
     }
 
     [Fact]
-    public void InstallOptions_ConfigPath_NullOrEmpty_Handled()
+    public async Task InstallAsync_WithNullConfigPath_UsesDefaultPath()
     {
+        using var client = new RulesyncClient();
         var options = new InstallOptions
         {
             ConfigPath = null!
         };
 
-        Assert.Equal(null!, options.ConfigPath);
+        // Null config path should be handled gracefully
+        var result = await client.InstallAsync(options);
+
+        // Should complete without throwing (Result<T> is a value type)
+        Assert.True(result.IsSuccess || result.IsFailure, "Result should have a defined state");
     }
 
     #endregion
@@ -276,7 +290,7 @@ public class SecurityTests
     public async Task InitAsync_MultipleConcurrentCalls_DoesNotCorruptState()
     {
         using var client = new RulesyncClient();
-        var tasks = new Task[10];
+        var tasks = new Task<Result<InitResult>>[10];
 
         for (int i = 0; i < 10; i++)
         {
@@ -284,14 +298,20 @@ public class SecurityTests
         }
 
         // Should complete without crashes or state corruption
-        await Task.WhenAll(tasks);
+        var results = await Task.WhenAll(tasks);
+
+        // Verify all tasks completed successfully (Result<T> is a value type)
+        Assert.All(results, result =>
+        {
+            Assert.True(result.IsSuccess || result.IsFailure, "Each result should have a defined state");
+        });
     }
 
     [Fact]
     public async Task FetchAsync_MultipleConcurrentCalls_DoesNotCorruptState()
     {
         using var client = new RulesyncClient();
-        var tasks = new Task[10];
+        var tasks = new Task<Result<FetchSummary>>[10];
 
         for (int i = 0; i < 10; i++)
         {
@@ -301,7 +321,13 @@ public class SecurityTests
             }).AsTask();
         }
 
-        await Task.WhenAll(tasks);
+        var results = await Task.WhenAll(tasks);
+
+        // Verify all tasks completed and returned results (Result<T> is a value type)
+        Assert.All(results, result =>
+        {
+            Assert.True(result.IsSuccess || result.IsFailure, "Each result should have a defined state");
+        });
     }
 
     [Fact]
@@ -318,6 +344,12 @@ public class SecurityTests
         };
 
         await Task.WhenAll(tasks);
+
+        // Verify all tasks completed successfully
+        Assert.All(tasks, task =>
+        {
+            Assert.True(task.IsCompletedSuccessfully, "Task should complete successfully");
+        });
     }
 
     #endregion

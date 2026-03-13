@@ -162,15 +162,18 @@ public class JsonContextTests
         var nestedJson = GenerateNestedJson(50);
 
         // This should deserialize successfully since depth < 64
-        var result = RulesyncJsonContext.DeserializeGenerateResult("{}");
+        var result = RulesyncJsonContext.DeserializeGenerateResult(nestedJson);
         Assert.NotNull(result);
     }
 
     [Fact]
     public void DeserializeImportResult_DeepNesting_Succeeds()
     {
-        // Test with moderate nesting
-        var result = RulesyncJsonContext.DeserializeImportResult("{}");
+        // Create JSON with 50 levels of nesting (under the 64 limit)
+        var nestedJson = GenerateNestedJson(50);
+
+        // This should deserialize successfully since depth < 64
+        var result = RulesyncJsonContext.DeserializeImportResult(nestedJson);
         Assert.NotNull(result);
     }
 

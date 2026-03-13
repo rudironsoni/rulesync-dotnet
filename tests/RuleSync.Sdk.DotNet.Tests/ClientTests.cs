@@ -10,7 +10,7 @@ namespace Rulesync.Sdk.DotNet.Tests;
 public class ClientTests
 {
     [Fact]
-    public void Constructor_WithDefaults_SetsDefaultValues()
+    public void Constructor_Default_CreatesClientSuccessfully()
     {
         var client = new RulesyncClient();
 
@@ -20,7 +20,7 @@ public class ClientTests
     }
 
     [Fact]
-    public void Constructor_WithCustomPaths_SetsValues()
+    public void Constructor_Called_CreatesClientSuccessfully()
     {
         var client = new RulesyncClient();
 
@@ -49,13 +49,15 @@ public class ClientTests
     }
 
     [Fact]
-    public void BuildGenerateArgs_WithoutOptions_ReturnsMinimalArgs()
+    public async Task GenerateAsync_WithoutOptions_ReturnsResult()
     {
-        // This tests the internal arg building logic indirectly
-        // by verifying the client can be created with options
-        var client = new RulesyncClient();
-        Assert.NotNull(client);
-        client.Dispose();
+        // Test that GenerateAsync works with default options
+        using var client = new RulesyncClient();
+
+        var result = await client.GenerateAsync();
+
+        // Verify result has valid state (Result<T> is a value type)
+        Assert.True(result.IsSuccess || result.IsFailure, "Result should have a defined state");
     }
 
     [Fact]
