@@ -1,6 +1,7 @@
 #!/bin/bash
 # verify-bundled-rulesync.sh
-# Verifies that the RuleSync.Sdk.DotNet NuGet package contains bundled native binaries
+# Verifies that the RuleSync.Sdk.DotNet NuGet package is properly built
+# Note: Binaries are now downloaded at runtime, not bundled
 
 set -e
 
@@ -14,7 +15,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo "=== Verifying Bundled Rulesync in NuGet Package ==="
+echo "=== Verifying RuleSync.Sdk.DotNet NuGet Package ==="
+echo ""
+echo "Note: Binaries are downloaded at runtime from GitHub releases"
+echo "      They are no longer bundled in the package to avoid LFS quota issues"
 echo ""
 
 # Find the main SDK package (not SourceGenerators, not symbols)
@@ -31,53 +35,38 @@ echo ""
 
 # List package contents
 echo "Package contents:"
-unzip -l "$NUPKG_FILE" | grep -E "(tools|rulesync)" || true
+unzip -l "$NUPKG_FILE" | grep -E "(lib/|README)" || true
 echo ""
 
-# Check for tools/rulesync directory
-echo "Checking for tools/rulesync directory..."
-if unzip -l "$NUPKG_FILE" | grep -q "tools/rulesync"; then
-    echo -e "${GREEN}✓ Found tools/rulesync in package${NC}"
-else
-    echo -e "${RED}ERROR: tools/rulesync not found in package${NC}"
-    echo ""
-    echo "Full package contents:"
-    unzip -l "$NUPKG_FILE"
-    exit 1
-fi
-
-# Check for native binaries
-echo ""
-echo "Checking for native binaries..."
-
-REQUIRED_FILES=(
-    "tools/rulesync/linux-x64/rulesync"
-    "tools/rulesync/linux-arm64/rulesync"
-    "tools/rulesync/darwin-x64/rulesync"
-    "tools/rulesync/darwin-arm64/rulesync"
-    "tools/rulesync/windows-x64/rulesync.exe"
+# Verify DLLs are present
+echo "Checking for required DLLs..."
+REQUIRED_DLLS=(
+    "lib/net6.0/RuleSync.Sdk.DotNet.dll"
+    "lib/net8.0/RuleSync.Sdk.DotNet.dll"
+    "lib/netstandard2.1/RuleSync.Sdk.DotNet.dll"
 )
 
-MISSING_FILES=()
+MISSING_DLLS=()
 
-for file in "${REQUIRED_FILES[@]}"; do
-    if unzip -l "$NUPKG_FILE" | grep -q "$file"; then
-        echo -e "${GREEN}✓ Found $file${NC}"
+for dll in "${REQUIRED_DLLS[@]}"; do
+    if unzip -l "$NUPKG_FILE" | grep -q "$dll"; then
+        echo -e "${GREEN}✓ Found $dll${NC}"
     else
-        echo -e "${RED}✗ Missing $file${NC}"
-        MISSING_FILES+=("$file")
+        echo -e "${RED}✗ Missing $dll${NC}"
+        MISSING_DLLS+=("$dll")
     fi
 done
 
 # Summary
 echo ""
-if [ ${#MISSING_FILES[@]} -eq 0 ]; then
+if [ ${#MISSING_DLLS[@]} -eq 0 ]; then
     echo -e "${GREEN}=== Verification PASSED ===${NC}"
-    echo "All required native binaries are present."
+    echo "Package contains required DLLs."
+    echo "Binaries will be downloaded at runtime from GitHub releases."
     exit 0
 else
     echo -e "${RED}=== Verification FAILED ===${NC}"
-    echo "Missing files:"
-    printf '  - %s\n' "${MISSING_FILES[@]}"
+    echo "Missing DLLs:"
+    printf '  - %s\n' "${MISSING_DLLS[@]}"
     exit 1
 fi
