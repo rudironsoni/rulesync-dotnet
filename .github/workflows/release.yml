@@ -23,6 +23,11 @@ on:
         required: false
         default: false
         type: boolean
+      force_stable:
+        description: 'Force stable release (skip RC versioning, publish as stable even from main branch)'
+        required: false
+        default: false
+        type: boolean
       skip_tests:
         description: 'Skip running tests (use with caution)'
         required: false
@@ -75,6 +80,15 @@ jobs:
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
             echo "override_stable=false" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.inputs.force_stable }}" == "true" ]; then
+            # Force stable release from main branch
+            BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
+            VERSION="v${BASE_VERSION}"
+            IS_PRERELEASE=false
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "override_stable=${{ github.event.inputs.override_stable }}" >> "$GITHUB_OUTPUT"
+            echo "Forced stable release: $VERSION"
           else
             # Get base version from Directory.Build.props
             BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
